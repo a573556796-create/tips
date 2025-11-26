@@ -156,7 +156,7 @@
       <div class="add">
           <div style="width:400px;height: 500px;background-color: white;border-radius: 10px;">
               <div style="width: 400px;">
-                <!-- <el-calendar 
+                <el-calendar 
                         :model-value="value" 
                         @input="onSelect" 
                         :disabled-date="disableFutureDates"
@@ -169,26 +169,7 @@
                             {{ date.getUTCDate() }}
                     </div>
                   </template>
-                </el-calendar> -->
-                <el-calendar 
-                    :model-value="calendarValue"
-                    @input="onSelectDay"
-                  >
-                    <template v-slot:dateCell="{ date, data }">
-                      <div 
-                        class="date-cell-content"
-                        :class="{
-                          'future-date-gray': isFutureDate(date),
-                          'range-start': isStart(date),
-                          'range-end': isEnd(date),
-                          'range-middle': isInRange(date)
-                        }"
-                        @click="selectRange(date)"
-                      >
-                        {{ date.getUTCDate() }}
-                      </div>
-                    </template>
-                  </el-calendar>
+                </el-calendar>
               </div>
           </div>
       </div>
@@ -247,35 +228,6 @@ export default {
     this.getList()
   },
   methods:{
-    selectRange(date) {
-    if (this.isFutureDate(date)) return;
-
-    // ① 如果没有开始日期 → 设为开始日期
-    if (!this.startDate) {
-      this.startDate = new Date(date);
-      this.endDate = null;
-      return;
-    }
-
-    // ② 如果已经有 start 但没有 end → 设置 end
-    if (this.startDate && !this.endDate) {
-      const start = this.startDate.getTime();
-      const end = date.getTime();
-
-      // 若结束比开始早 → 交换
-      if (end < start) {
-        this.endDate = this.startDate;
-        this.startDate = new Date(date);
-      } else {
-        this.endDate = new Date(date);
-      }
-      return;
-    }
-
-    // ③ start + end 都存在，再点击就是重新开始
-    this.startDate = new Date(date);
-    this.endDate = null;
-  },
     tongji(){
 
     },
