@@ -9,10 +9,11 @@
               <div style="display: flex;align-items: center;margin-left: 10px;margin-right: 20px;">
                 <div>信用卡小费</div>：<el-input class="ipt" type="number" v-model="credit" placeholder="请输入信用卡小费"></el-input>
               </div>
-              <el-button @click=count() type="primary">计算</el-button>
+              <el-button @click=count() type="success">计算工资</el-button>
+              <el-button @click=clear() type="info">清空数据</el-button>
             </div>
             <div style="margin-top: 20px;margin-bottom: 20px;">
-              计算前请先勾选需要计算的项目
+              计算前请先勾选需要计算的人员
             </div>
             <div class="line1">
                 <div class="t1">
@@ -45,7 +46,7 @@
                       <span v-if="!item.default" class="dian2">{{item.percent}}</span>
                     </div>
                   </div>
-                  <div class="t3">{{item.wage}}</el-input></div>
+                  <div class="t3"><el-input v-model="item.wage">{{item.wage}}</el-input></div>
                 </div>
             </div>
             <div style="width: 100px;height: 30px;"></div>
@@ -83,7 +84,7 @@
             </div>
           </div>
       </div>
-      <div><el-button @click="listshow" type="primary">人员列表</el-button></div>
+      
       <div class="add" v-if="!isClosed">
           <div class="add2">
             <div v-if="!isEdit" style="margin-top: 50px;font-size: 30px;margin-bottom: 20px;">添加工作人员</div>
@@ -112,6 +113,7 @@
               <el-input style="width: 220px;margin-bottom: 10px;" v-model="type3Name" placeholder="请输入姓名"></el-input>
               <el-input  type="number" style="width: 220px;margin-bottom: 10px;" v-model="type3hr" placeholder="请输入时薪"></el-input>
               <el-input  type="number" style="width: 220px;" v-model="type3hr2" placeholder="请输入加班时薪"></el-input>
+              <el-input  type="number" style="width: 220px;margin-bottom: 10px;margin-top: 10px;" v-model="type3hr3" placeholder="请输入公司补助"></el-input>
               <el-button @click="sub3" style="width: 220px;margin-top: 30px;" type="primary">提交</el-button>
               <el-button  @click="close" style="width: 220px;margin-top: 30px;margin-left: -0px;" type="info">关闭</el-button>
             </div>
@@ -151,25 +153,36 @@
             </div>
           </div>
       </div>
+      <el-button @click="listshow" type="success">员工列表</el-button>
       <el-button type="success" @click="saveToHistory">保存今日记录</el-button>
       <el-button type="success" @click="tongji">统计</el-button>
-      <div class="add">
-          <div style="width:400px;height: 500px;background-color: white;border-radius: 10px;">
+      <el-button type="success" :disabled="isPlus20" @click="plus20">16000加20</el-button>
+      <el-button type="success" :disabled="isPlus30" @click="plus30">20000加30</el-button>
+      <div class="add"  @click=test() v-if="tongjiShow">
+          <div style="width:400px;height: 500px;background-color: white;border-radius: 10px;position: relative;"  @click=test2()>
               <div style="width: 400px;">
+                <div style="margin-bottom:8px;">
+      <el-checkbox style="position: absolute;top: 25px;left: 150px;z-index: 99999;" v-model="isChecked" @change="changeMode">统计模式</el-checkbox>
+    </div>
                 <el-calendar 
-                        :model-value="value" 
-                        @input="onSelect" 
-                        :disabled-date="disableFutureDates"
-                      >
-                        <template v-slot:dateCell="{ date, data }">
-                          <div 
-                            :class="{'future-date-gray': isFutureDate(date)}"
-                            class="date-cell-content"
-                          >
-                            {{ date.getUTCDate() }}
-                    </div>
-                  </template>
-                </el-calendar>
+  :model-value="calendarValue"
+  @input="onSelectDay"
+>
+  <template v-slot:dateCell="{ date, data }">
+    <div 
+      class="date-cell-content"
+      :class="{
+        'future-date-gray': isFutureDate(date),
+        'range-start': isStart(date),
+        'range-end': isEnd(date),
+        'range-middle': isInRange(date)
+      }"
+      @click="selectRange(date)"
+    >
+      {{ date.getUTCDate() }}
+    </div>
+  </template>
+</el-calendar>
               </div>
           </div>
       </div>
@@ -183,6 +196,13 @@ export default {
     const today = new Date();
     today.setUTCHours(0,0,0,0);
     return {
+      isPlus20:false,
+      isPlus30:false,
+      tongjiShow:false,
+      isChecked:false,
+      calendarValue: new Date(),
+      startDate: null,
+      endDate: null,
       value: '',
       todayUtcTimestamp: today.getTime(),
       cash:'',
@@ -216,6 +236,7 @@ export default {
       type3Name:'',
       type3hr: null,
       type3hr2:null,
+      type3hr3:null,
       maxId: null,
       currentList: null,
       currentIndex:null,
@@ -228,9 +249,158 @@ export default {
     this.getList()
   },
   methods:{
-    tongji(){
+    plus20(){
+      if(!this.isCount){
+        this.$message.error('计算后再加20');
+        return false
+      }
+      if(this.isPlus20){
+        return false
+      }
+      let sum2 = 0
+      let sum3 = 0
+      this.list2.map(res=>{
+        if(res.default){
+          res.wage = (Number(res.wage)+20)
+        }
+      })
+      this.list3.map(res=>{
+        if(res.default){
+          res.wage = (Number(res.wage)+20)
+        }
+      })
+      this.list2.map(res=>{
+        if(res.default){
+          sum2 += (Number(res.wage)+20) || 0; 
+        }
+      })
+      this.list3.map(res=>{
+        if(res.default){
+          sum3 += (Number(res.wage)+20) || 0; 
+        }
+      })
+      this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
+      // 4. 重新分配给 List1
+      let list11 = this.list1.filter(item => item.default);
+      this.splitFairForObjects(list11, this.totalTips2);
+
+      // 5. 强制刷新视图 (Vue 2 有时需要)
+      this.isPlus20=true
+      this.$forceUpdate();
     },
+    plus30(){
+      if(!this.isCount){
+        this.$message.error('计算后再加30');
+        return false
+      }
+      if(this.isPlus30){
+        return false
+      }
+      let sum2 = 0
+      let sum3 = 0
+      this.list2.map(res=>{
+        if(res.default){
+          res.wage = (Number(res.wage)+30)
+        }
+      })
+      this.list3.map(res=>{
+        if(res.default){
+          res.wage = (Number(res.wage)+30)
+        }
+      })
+      this.list2.map(res=>{
+        if(res.default){
+          sum2 += (Number(res.wage)+30) || 0; 
+        }
+      })
+      this.list3.map(res=>{
+        if(res.default){
+          sum3 += (Number(res.wage)+30) || 0; 
+        }
+      })
+      this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
+
+      // 4. 重新分配给 List1
+      let list11 = this.list1.filter(item => item.default);
+      this.splitFairForObjects(list11, this.totalTips2);
+
+      // 5. 强制刷新视图 (Vue 2 有时需要)
+      this.$forceUpdate();
+      this.isPlus30=true
+    },
+    tongji(){
+      this.tongjiShow=true
+    },
+    changeMode(){
+      this.startDate = null;
+      this.endDate = null;
+    },
+    selectRange(date) {
+      if(!this.isChecked){
+        return
+      }
+    if (this.isFutureDate(date)) return;
+
+    // ① 如果没有开始日期 → 设为开始日期
+    if (!this.startDate) {
+      this.startDate = new Date(date);
+      this.endDate = null;
+      return;
+    }
+
+    // ② 如果已经有 start 但没有 end → 设置 end
+    if (this.startDate && !this.endDate) {
+      const start = this.startDate.getTime();
+      const end = date.getTime();
+
+      // 若结束比开始早 → 交换
+      if (end < start) {
+        this.endDate = this.startDate;
+        this.startDate = new Date(date);
+      } else {
+        this.endDate = new Date(date);
+      }
+      return;
+    }
+
+    // ③ start + end 都存在，再点击就是重新开始
+    this.startDate = new Date(date);
+    this.endDate = null;
+  },
+
+  // 日历内部的 input 不需要使用（否则会影响选区）
+  onSelectDay() {},
+
+  // -------------------------
+  // 高亮逻辑
+  // -------------------------
+  isSameDay(a, b) {
+    if (!a || !b) return false;
+    return (
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate()
+    );
+  },
+
+  isStart(date) {
+    return this.isSameDay(date, this.startDate);
+  },
+
+  isEnd(date) {
+    return this.isSameDay(date, this.endDate);
+  },
+
+  isInRange(date) {
+    if (!this.startDate || !this.endDate) return false;
+
+    const t = date.getTime();
+    const s = this.startDate.getTime();
+    const e = this.endDate.getTime();
+
+    return t > s && t < e;
+  },
     isFutureDate(date) {
       // 用 UTC 判断
       const d = new Date(date);
@@ -304,6 +474,8 @@ export default {
       this.getList()
     },
     count(){
+      this.isPlus20=false
+      this.isPlus30=false
       if(this.cash==''){
         this.$message.error('现金不能为空');
         return false
@@ -325,8 +497,7 @@ export default {
       })
       this.list3.map(res=>{
         if(res.default){
-          res.wage = Number(Number(res.hr)*Number(res.time1))+Number(Number(res.ot)*Number(res.time2?res.time2:0))
-          console.log(res.hr,res.time2)
+          res.wage = Number((Number(res.hr)-Number(res.buzhu))*Number(res.time1))+Number(Number(res.ot)*Number(res.time2?res.time2:0))
           sum2 += res.wage
         }
       })
@@ -359,6 +530,7 @@ export default {
     },
     test(){
       this.listShow = false
+      this.tongjiShow=false
     },
     test2(){
       console.log(555)
@@ -430,7 +602,9 @@ export default {
         this.currentId=this.list3[this.currentIndex].id
         this.type3hr=this.list3[this.currentIndex].hr
         this.type3hr2=this.list3[this.currentIndex].ot
+        this.type3hr3=this.list3[this.currentIndex].buzhu
       }
+      this.getList()
     },
      splitFairForObjects(list, totalMoneyRaw) {
     // 1. 转数字并校验
@@ -623,7 +797,8 @@ export default {
           wage: Number(item.wage),
           hr: item.hr,
           time1: item.time1,
-          time2: item.time2 // ✨ 新增：保存第二个时间点
+          time2: item.time2, // ✨ 新增：保存第二个时间点
+          buzhu: item.buzhu
         });
       }
     });
@@ -789,7 +964,7 @@ export default {
             this.list1.splice(this.currentIndex, 1)
             let obj = {}
             obj.wage = ''  // 提前声明
-obj.ot = ''    // 提前声明
+            obj.ot = ''    // 提前声明
             obj.name = this.type2Name
             obj.daily=this.type2daily
             obj.isShow = false
@@ -859,17 +1034,6 @@ obj.ot = ''    // 提前声明
       });
       this.getList()
     },
-    open(){
-      this.type = 1
-      this.type1Name=''
-      this.type1percent=null
-      this.type2Name=''
-      this.type2daily=null
-      this.type3Name=''
-      this.type3hr=null
-      this.type3hr2=null
-      this.isClosed = false
-    },
     sub3(){
       if (!this.type3Name.trim()) {
         this.$message.error('用户名不能为空');
@@ -884,6 +1048,7 @@ obj.ot = ''    // 提前声明
           this.list3[this.currentIndex].name = this.type3Name
           this.list3[this.currentIndex].hr = this.type3hr
           this.list3[this.currentIndex].ot = this.type3hr2
+          this.list3[this.currentIndex].buzhu = this.type3hr3
           localStorage.setItem('list3', JSON.stringify(this.list3));
           this.$message({
               message: '修改成功',
@@ -896,11 +1061,12 @@ obj.ot = ''    // 提前声明
             this.list1.splice(this.currentIndex, 1)
             let obj = {}
             obj.wage = ''  // 提前声明
-obj.time1 = '' // 提前声明
-obj.time2 = '' // 提前声明
+            obj.time1 = '' // 提前声明
+            obj.time2 = '' // 提前声明
             obj.name = this.type3Name
             obj.hr=this.type3hr
             obj.ot=this.type3hr2
+            obj.buzhu=this.type3hr3
             obj.isShow = false
             obj.id = this.currentId
             this.list3.push(obj)
@@ -919,6 +1085,7 @@ obj.time2 = '' // 提前声明
             obj.name = this.type3Name
             obj.hr=this.type3hr
             obj.ot=this.type3hr2
+            obj.buzhu=this.type3hr3
             obj.isShow = false
             obj.id = this.currentId
             this.list3.push(obj)
@@ -943,6 +1110,7 @@ obj.time2 = '' // 提前声明
       obj.name = this.type3Name
       obj.hr=this.type3hr
       obj.ot=this.type3hr2
+      obj.buzhu=this.type3hr3
       obj.isShow = false
       if (list3) {
         obj.id = this.maxId+1
@@ -965,6 +1133,7 @@ obj.time2 = '' // 提前声明
       this.type3Name = ''
       this.type3hr = null
       this.type3hr2 = null
+      this.type3hr3 = null
       this.$message({
           message: '添加成功',
           type: 'success'
@@ -981,16 +1150,49 @@ obj.time2 = '' // 提前声明
       this.type3Name=''
       this.type3hr=null
       this.type3hr2=null
+      this.type3hr3=null
       this.isClosed = false
     },
     close(){
       this.isClosed = true
+      this.type = 1
+      this.type1Name=''
+      this.type1percent=null
+      this.type2Name=''
+      this.type2daily=null
+      this.type3Name=''
+      this.type3hr=null
+      this.type3hr2=null
+      this.type3hr3=null
     }
   }
 }
 </script>
 
 <style scoped>
+  .t3 /deep/ .el-input__inner {
+  border: none;
+  background-color: transparent;
+}
+  .range-start {
+  background: #409EFF;
+  color: white;
+  border-radius: 50%;
+}
+
+/* 终点 */
+.range-end {
+  background: #409EFF;
+  color: white;
+  border-radius: 50%;
+}
+
+/* 中间区间 */
+.range-middle {
+  background: rgba(64, 158, 255, 0.25);
+  color: #333;
+  border-radius: 0;
+}
   .future-date-gray {
   color: #a0a0a0 !important; /* 设置较浅的灰色 */
   opacity: 0.6; /* 可以降低透明度 */
@@ -1056,7 +1258,7 @@ obj.time2 = '' // 提前声明
 }
 .add2{
   width: 600px;
-  height: 500px;
+  height: 570px;
   background-color: white;
   border-radius: 20px;
   display: flex;
@@ -1099,7 +1301,6 @@ obj.time2 = '' // 提前声明
 .div2{
   display:flex;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
 }
 .line1{
