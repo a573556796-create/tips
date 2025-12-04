@@ -165,24 +165,33 @@
       <el-checkbox style="position: absolute;top: 25px;left: 150px;z-index: 99999;" v-model="isChecked" @change="changeMode">统计模式</el-checkbox>
     </div>
                 <el-calendar 
-  :model-value="calendarValue"
-  @input="onSelectDay"
->
-  <template v-slot:dateCell="{ date, data }">
-    <div 
-      class="date-cell-content"
-      :class="{
-        'future-date-gray': isFutureDate(date),
-        'range-start': isStart(date),
-        'range-end': isEnd(date),
-        'range-middle': isInRange(date)
-      }"
-      @click="selectRange(date)"
-    >
-      {{ date.getUTCDate() }}
-    </div>
-  </template>
-</el-calendar>
+                    :model-value="calendarValue"
+                    @input="onSelectDay"
+                  >
+                    <template v-slot:dateCell="{ date, data }">
+                      <div 
+                        class="date-cell-content"
+                        :class="{
+                          'future-date-gray': isFutureDate(date),
+                          'range-start': isStart(date),
+                          'range-end': isEnd(date),
+                          'range-middle': isInRange(date)
+                        }"
+                        @click="selectRange(date)"
+                      >
+                        {{ date.getUTCDate() }}
+                      </div>
+                    </template>
+                  </el-calendar>
+                  <div class="result">
+                      <div class="r1">
+                        <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==1">{{item.name}}:{{item.wage}}</div>
+                      </div>
+                      <div class="r1">
+                        <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==2">{{item.name}}:{{item.wage}}</div>
+                        <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==3">{{item.name}}:{{item.wage}}({{item.time1}}h<span v-if="item.time2">+{{item.time2}}h</span>)</div>
+                      </div>
+                  </div>
               </div>
           </div>
       </div>
@@ -194,8 +203,12 @@ export default {
   name: '',
   data () {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     today.setUTCHours(0,0,0,0);
     return {
+      singleResult: [],
+      selectedDate:'',
+      todayLocalTimestamp: today.getTime(),
       isPlus20:false,
       isPlus30:false,
       tongjiShow:false,
@@ -249,6 +262,10 @@ export default {
     this.getList()
   },
   methods:{
+    clear(){
+      this.credit=''
+      this.cash=''
+    },
     plus20(){
       if(!this.isCount){
         this.$message.error('计算后再加20');
@@ -336,41 +353,117 @@ export default {
       this.startDate = null;
       this.endDate = null;
     },
+    formatDate(date) {
+      // 解决跨时区 (如纽约时区) 导致日期偏差的问题
+      const year = date.getUTCFullYear();
+      // getUTCMonth() 返回 0-11，需要 +1
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+      const day = String(date.getUTCDate()).padStart(2, '0'); 
+      return `${year}-${month}-${day}`;
+    },
+    single(date){
+      let getSalary = JSON.parse(localStorage.getItem('wage_history'));
+      this.singleResult =  getSalary.filter(item => item.date == date);
+      console.log(this.singleResult)
+    },
+    toLocalDate(str) {
+        const [y, m, d] = str.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    },
     selectRange(date) {
-      if(!this.isChecked){
-        return
-      }
-    if (this.isFutureDate(date)) return;
+        // 检查是否是单选模式 (this.isChecked 为 false)
+        if(!this.isChecked){
+            this.selectedDate = this.formatDate(date);
+            this.single(this.selectedDate);
+            
+            // 关键改动：使用 formatDate 打印，确保看到的是选择的日期
+            console.log('点击了日期：', this.selectedDate); 
+            return false;
+        }
 
-    // ① 如果没有开始日期 → 设为开始日期
-    if (!this.startDate) {
-      this.startDate = new Date(date);
-      this.endDate = null;
-      return;
-    }
+        if (this.isFutureDate(date)) return;
 
-    // ② 如果已经有 start 但没有 end → 设置 end
-    if (this.startDate && !this.endDate) {
-      const start = this.startDate.getTime();
-      const end = date.getTime();
+        const current = this.toLocalDate(this.formatDate(date));
+        if (!this.startDate) {
+            this.startDate = current;
+            console.log(this.startDate)
+            return;
+        }
 
-      // 若结束比开始早 → 交换
-      if (end < start) {
-        this.endDate = this.startDate;
+        // ② 如果已经有 start 但没有 end → 设置 end
+        if (this.startDate && !this.endDate) {
+            const start = this.startDate.getTime();
+            const end = date.getTime();
+
+            // 若结束比开始早 → 交换
+            if (end < start) {
+                this.endDate = this.startDate;
+                this.startDate = new Date(date);
+            } else {
+                this.endDate = new Date(date);
+            }
+            
+            // 关键改动：使用 formatDate 打印，避免时区问题
+            // 注意：原代码中打印的是 this.end，假设是 this.endDate 的笔误，这里修正为 this.endDate
+            console.log('结束了', this.formatDate(this.endDate));
+            // 如果原代码中 this.end 是一个存在的属性，请自行调整
+            // console.log('结束了', this.end); 
+            return;
+        }
+
+        // ③ start + end 都存在，再点击就是重新开始
         this.startDate = new Date(date);
-      } else {
-        this.endDate = new Date(date);
-      }
-      return;
-    }
+        this.endDate = null;
+        
+        // 关键改动：重新开始时也打印格式化后的日期
+        console.log('重新开始，新选择了',this.formatDate(this.startDate));
+    },
+  //   selectRange(date) {
+  //     if(!this.isChecked){
+  //       this.selectedDate=this.formatDate(date);
+  //       this.single(this.selectedDate)
+  //        console.log('点击了日期：', this.selectedDate);
+  //       return false
+  //     }
+  //     if(!this.isChecked){
+  //       return
+  //     }
 
-    // ③ start + end 都存在，再点击就是重新开始
-    this.startDate = new Date(date);
-    this.endDate = null;
-  },
+  //   if (this.isFutureDate(date)) return;
+
+  //   // ① 如果没有开始日期 → 设为开始日期
+  //   if (!this.startDate) {
+  //     this.startDate = new Date(date);
+  //     this.endDate = null;
+  //     console.log('开始了', this.formatDate(this.startDate))
+  //     return;
+  //   }
+
+  //   // ② 如果已经有 start 但没有 end → 设置 end
+  //   if (this.startDate && !this.endDate) {
+  //     const start = this.startDate.getTime();
+  //     const end = date.getTime();
+
+
+  //     // 若结束比开始早 → 交换
+  //     if (end < start) {
+  //       this.endDate = this.startDate;
+  //       this.startDate = new Date(date);
+  //     } else {
+  //       this.endDate = new Date(date);
+  //     }
+  //     console.log('结束了', this.formatDate(this.endDate))
+  //     return;
+  //   }
+
+  //   // ③ start + end 都存在，再点击就是重新开始
+  //   this.startDate = new Date(date);
+  //   this.endDate = null;
+  // },
 
   // 日历内部的 input 不需要使用（否则会影响选区）
-  onSelectDay() {},
+  onSelectDay(e) {
+  },
 
   // -------------------------
   // 高亮逻辑
@@ -497,7 +590,7 @@ export default {
       })
       this.list3.map(res=>{
         if(res.default){
-          res.wage = Number((Number(res.hr)-Number(res.buzhu))*Number(res.time1))+Number(Number(res.ot)*Number(res.time2?res.time2:0))
+          res.wage = Math.round(Number((Number(res.hr)-Number(res.buzhu))*Number(res.time1))+Number(Number(res.ot)*Number(res.time2?res.time2:0)))
           sum2 += res.wage
         }
       })
@@ -531,9 +624,10 @@ export default {
     test(){
       this.listShow = false
       this.tongjiShow=false
+      this.selectedDate=''
+      this.singleResult=[]
     },
     test2(){
-      console.log(555)
       event.stopPropagation();
     },
     listshow(){
@@ -672,7 +766,6 @@ export default {
       delete x.rem;
       delete x.__origIndex;
     });
-
     return list;
   },
     getList(){
@@ -708,26 +801,6 @@ export default {
           }
         });
         this.totalPercent = sum1.toFixed(1);
-      // let list1 = localStorage.getItem('list1')!=null?JSON.parse(localStorage.getItem('list1')):[];
-      // let list2 = localStorage.getItem('list2')!=null?JSON.parse(localStorage.getItem('list2')):[];
-      // let list3 = localStorage.getItem('list3')!=null?JSON.parse(localStorage.getItem('list3')):[];
-      // this.list1 = list1
-      // this.list2 = list2
-      // this.list3 = list3
-      // let sum1 = 0
-      // this.list1.forEach(item => {
-      //   item.default = true
-      //   if (item.default&&item.isShow) {
-      //     sum1 += Number(item.percent)
-      //   }
-      // })
-      // this.totalPercent=sum1.toFixed(1)
-      // this.list2.forEach(item => {
-      //   item.default = true
-      // })
-      // this.list3.forEach(item => {
-      //   item.default = false
-      // })
     },
     getTodayString() {
     const date = new Date();
@@ -1003,7 +1076,7 @@ export default {
       if(!isName){
         return false
       }
-      let list2 = JSON.parse(localStorage.getItem('list2'));
+      let list2 = JSON.parse(localStorage.getItem('list2'))
       let obj = {}
       obj.name = this.type2Name
       obj.daily=this.type2daily
@@ -1164,28 +1237,44 @@ export default {
       this.type3hr=null
       this.type3hr2=null
       this.type3hr3=null
+      this.selectedDate=''
+      this.singleResult=[]
     }
   }
 }
 </script>
 
 <style scoped>
+  .r1{
+    display: flex;
+    align-items: center;
+    flex-flow: wrap;
+  }
+  .r1 div{
+  }
+  .result{
+    width: 100%;
+    height: 120px;
+    margin-top: -30px;
+    border: 1px solid black;
+    box-sizing: border-box;
+    padding: 10px;
+  }
   .t3 /deep/ .el-input__inner {
-  border: none;
-  background-color: transparent;
-}
+    border: none;
+    background-color: transparent;
+  }
   .range-start {
-  background: #409EFF;
-  color: white;
-  border-radius: 50%;
-}
-
-/* 终点 */
-.range-end {
-  background: #409EFF;
-  color: white;
-  border-radius: 50%;
-}
+    background: #409EFF;
+    color: white;
+    border-radius: 50%;
+  }
+  /* 终点 */
+  .range-end {
+    background: #409EFF;
+    color: white;
+    border-radius: 50%;
+  }
 
 /* 中间区间 */
 .range-middle {
