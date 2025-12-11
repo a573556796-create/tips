@@ -34,16 +34,16 @@
                 </div>
             </div>
             <div class="line1">
-                <div class="t1" v-for="(item,index) in list1" v-if="item.isShow">
+                <div class="t1" v-for="(item,index) in list1" v-if="item.isShow==1">
                   <div class="t2" @click=selected1(index)>
                     <div>
-                      <img style="width: 15px;height: 15px;" v-if="item.default" src="../assets/selected1.png"></img>
-                      <img style="width: 15px;height: 15px;" v-if="!item.default" src="../assets/selected2.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="item.isSelected" src="../assets/selected1.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="!item.isSelected" src="../assets/selected2.png"></img>
                     </div>
                     <div>
                       <span>{{item.name}}</span>
-                      <span v-if="item.default" class="dian">{{item.percent}}</span>
-                      <span v-if="!item.default" class="dian2">{{item.percent}}</span>
+                      <span v-if="item.isSelected" class="dian">{{item.percent}}</span>
+                      <span v-if="!item.isSelected" class="dian2">{{item.percent}}</span>
                     </div>
                   </div>
                   <div class="t3"><el-input v-model="item.wage">{{item.wage}}</el-input></div>
@@ -51,11 +51,11 @@
             </div>
             <div style="width: 100px;height: 30px;"></div>
             <div class="line11">
-                <div class="t11" v-for="(item,index) in list2" :key="item.id" v-if="item.isShow">
+                <div class="t11" v-for="(item,index) in list2" :key="item.id" v-if="item.isShow==1">
                   <div class="t4" @click=selected2(index)>
                     <div>
-                      <img style="width: 15px;height: 15px;" v-if="item.default" src="../assets/selected1.png"></img>
-                      <img style="width: 15px;height: 15px;" v-if="!item.default" src="../assets/selected2.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="item.isSelected" src="../assets/selected1.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="!item.isSelected" src="../assets/selected2.png"></img>
                     </div>
                     <div>
                       <span>{{item.name}}</span>
@@ -65,16 +65,16 @@
                   <el-input style="width: 150px;" v-model="item.ot" placeholder="加班费/$"></el-input>
                   <el-input style="width: 150px;" @change="changewage2(index)" v-model="item.wage" placeholder="工资/$"></el-input>
                 </div>
-                <div class="t11" v-for="(item,index) in list3" v-if="item.isShow">
+                <div class="t11" v-for="(item,index) in list3" v-if="item.isShow==1">
                   <div class="t4" @click=selected3(index)>
                     <div>
-                      <img style="width: 15px;height: 15px;" v-if="item.default" src="../assets/selected1.png"></img>
-                      <img style="width: 15px;height: 15px;" v-if="!item.default" src="../assets/selected2.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="item.isSelected" src="../assets/selected1.png"></img>
+                      <img style="width: 15px;height: 15px;" v-if="!item.isSelected" src="../assets/selected2.png"></img>
                     </div>
                     <div>
                       <span>{{item.name}}</span>
-                      <span v-if="item.default" class="dian">{{item.hr}}</span>
-                      <span v-if="!item.default" class="dian2">{{item.hr}}</span>
+                      <span v-if="item.isSelected" class="dian">{{item.hr}}</span>
+                      <span v-if="!item.isSelected" class="dian2">{{item.hr}}</span>
                     </div>
                   </div>
                   <el-input  class="custom-input" style="width: 150px;" size="large" v-model="item.time1" placeholder="工作时长/Hours"></el-input>
@@ -133,19 +133,19 @@
                  <div style="width:100px">删除员工</div>
                </div>
                <div class="listItem" v-for="(item,index) in list1">
-                 <div style="width:80px"><el-checkbox v-model="item.isShow" @change="show1()"></el-checkbox></div>
+                 <div style="width:80px"><el-checkbox  v-model="item.isShow" :true-label="1" :false-label="0"   @change="show1()"></el-checkbox></div>
                  <div style="width:140px">{{item.name}}</div>
                  <div @click="edit(1,index,item.id)" style="width:100px;color: #409EFF;">编辑</div>
                  <div style="width:100px;color: #409EFF;" @click=delete1(1,index)>删除</div>
                </div>
                <div class="listItem" v-for="(item,index) in list2">
-                 <div style="width:80px"><el-checkbox  v-model="item.isShow" @change="show2()"></el-checkbox></div>
+                 <div style="width:80px"><el-checkbox  v-model="item.isShow" :true-label="1" :false-label="0" @change="show2()"></el-checkbox></div>
                  <div style="width:140px">{{item.name}}</div>
                  <div @click="edit(2,index,item.id)" style="width:100px;color: #409EFF;">编辑</div>
                  <div style="width:100px;color: #409EFF;" @click=delete2(2,index)>删除</div>
                </div>
                <div class="listItem" v-for="(item,index) in list3">
-                 <div style="width:80px"><el-checkbox  v-model="item.isShow" @change="show3()"></el-checkbox></div>
+                 <div style="width:80px"><el-checkbox  v-model="item.isShow" :true-label="1" :false-label="0" @change="show3()"></el-checkbox></div>
                  <div style="width:140px">{{item.name}}</div>
                  <div @click="edit(3,index,item.id)" style="width:100px;color: #409EFF;">编辑</div>
                  <div style="width:100px;color: #409EFF;" @click=delete3(3,index)>删除</div>
@@ -161,9 +161,15 @@
       <div class="add"  @click=test() v-if="tongjiShow">
           <div style="width:400px;height: 500px;background-color: white;border-radius: 10px;position: relative;"  @click=test2()>
               <div style="width: 400px;">
-                <div style="margin-bottom:8px;">
+                <!-- <div style="margin-bottom:8px;">
+            <el-select v-model="selectedStaffId" placeholder="请选择工作人员">
+      
+      <el-option
+        v-for="item in staffList"
+        :key="item.id"           :label="item.name"       :value="item.id"         />
+    </el-select>
       <el-checkbox style="position: absolute;top: 25px;left: 150px;z-index: 99999;" v-model="isChecked" @change="changeMode">统计模式</el-checkbox>
-    </div>
+    </div> -->
                 <el-calendar 
                     :model-value="calendarValue"
                     @input="onSelectDay"
@@ -206,6 +212,14 @@ export default {
     today.setHours(0, 0, 0, 0);
     today.setUTCHours(0,0,0,0);
     return {
+      selectedStaffId: null, 
+      // 2. 工作人员列表数据，这是一个包含对象（工作人员信息）的数组
+      staffList:[
+        { id: 101, name: '张三', department: '研发部' },
+        { id: 102, name: '李四', department: '市场部' },
+        { id: 103, name: '王五', department: '财务部' },
+        { id: 104, name: '赵六', department: '人事部' }
+      ],
       singleResult: [],
       selectedDate:'',
       todayLocalTimestamp: today.getTime(),
@@ -254,14 +268,45 @@ export default {
       currentList: null,
       currentIndex:null,
       currentId:null,
-      isCount:false
+      isCount:false,
+      startTime:null,
+      endTime:null
     }
   },
   mounted() {
+    this.getHistory()
+    this.getUsers()
     this.getMax()
     this.getList()
   },
+  computed: {
+    currentDisplayMonth() {
+      if (this.calendarValue instanceof Date) {
+      // 建议使用 UTC 方法获取年和月，以避免时区偏移导致的日期提前
+      const year = this.calendarValue.getUTCFullYear();
+      // getUTCMonth() 返回 0-11，需要 +1
+      const month = this.calendarValue.getUTCMonth() + 1; 
+      
+      // 如果您需要本地时间显示，但 calendarValue 确实被时区影响了，
+      // 那么使用 UTC 往往能锁定到该日期对象代表的那个“月”。
+      return `${year}年${month}月`; 
+    }
+    return '无法获取月份';
+    }
+  },
   methods:{
+    getUsers() {
+      this.$http.get('/list')
+        .then(res => {
+          let result = res.data
+          localStorage.setItem('list1', JSON.stringify(result.list1))
+          localStorage.setItem('list2', JSON.stringify(res.data.list2))
+          localStorage.setItem('list3', JSON.stringify(res.data.list3))
+        })
+        .catch(error => {
+          console.error('请求失败:', error)
+        })
+    },
     clear(){
       this.credit=''
       this.cash=''
@@ -277,29 +322,30 @@ export default {
       let sum2 = 0
       let sum3 = 0
       this.list2.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = (Number(res.wage)+20)
         }
       })
       this.list3.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = (Number(res.wage)+20)
         }
       })
       this.list2.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           sum2 += (Number(res.wage)+20) || 0; 
         }
       })
       this.list3.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           sum3 += (Number(res.wage)+20) || 0; 
         }
       })
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.default);
+      let list11 = this.list1.filter(item => item.isSelected);
+      console.log(list11)
       this.splitFairForObjects(list11, this.totalTips2);
 
       // 5. 强制刷新视图 (Vue 2 有时需要)
@@ -317,29 +363,29 @@ export default {
       let sum2 = 0
       let sum3 = 0
       this.list2.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = (Number(res.wage)+30)
         }
       })
       this.list3.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = (Number(res.wage)+30)
         }
       })
       this.list2.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           sum2 += (Number(res.wage)+30) || 0; 
         }
       })
       this.list3.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           sum3 += (Number(res.wage)+30) || 0; 
         }
       })
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.default);
+      let list11 = this.list1.filter(item => item.isSelected);
       this.splitFairForObjects(list11, this.totalTips2);
 
       // 5. 强制刷新视图 (Vue 2 有时需要)
@@ -372,6 +418,7 @@ export default {
     },
     selectRange(date) {
         // 检查是否是单选模式 (this.isChecked 为 false)
+
         if(!this.isChecked){
             this.selectedDate = this.formatDate(date);
             this.single(this.selectedDate);
@@ -386,7 +433,8 @@ export default {
         const current = this.toLocalDate(this.formatDate(date));
         if (!this.startDate) {
             this.startDate = current;
-            console.log(this.startDate)
+            this.startTime=this.formatDate(this.startDate)
+            console.log('开始了',this.startTime);
             return;
         }
 
@@ -405,7 +453,8 @@ export default {
             
             // 关键改动：使用 formatDate 打印，避免时区问题
             // 注意：原代码中打印的是 this.end，假设是 this.endDate 的笔误，这里修正为 this.endDate
-            console.log('结束了', this.formatDate(this.endDate));
+            this.endTime=this.formatDate(this.endDate)
+            console.log('结束了', this.startTime,this.endTime);
             // 如果原代码中 this.end 是一个存在的属性，请自行调整
             // console.log('结束了', this.end); 
             return;
@@ -418,51 +467,8 @@ export default {
         // 关键改动：重新开始时也打印格式化后的日期
         console.log('重新开始，新选择了',this.formatDate(this.startDate));
     },
-  //   selectRange(date) {
-  //     if(!this.isChecked){
-  //       this.selectedDate=this.formatDate(date);
-  //       this.single(this.selectedDate)
-  //        console.log('点击了日期：', this.selectedDate);
-  //       return false
-  //     }
-  //     if(!this.isChecked){
-  //       return
-  //     }
-
-  //   if (this.isFutureDate(date)) return;
-
-  //   // ① 如果没有开始日期 → 设为开始日期
-  //   if (!this.startDate) {
-  //     this.startDate = new Date(date);
-  //     this.endDate = null;
-  //     console.log('开始了', this.formatDate(this.startDate))
-  //     return;
-  //   }
-
-  //   // ② 如果已经有 start 但没有 end → 设置 end
-  //   if (this.startDate && !this.endDate) {
-  //     const start = this.startDate.getTime();
-  //     const end = date.getTime();
-
-
-  //     // 若结束比开始早 → 交换
-  //     if (end < start) {
-  //       this.endDate = this.startDate;
-  //       this.startDate = new Date(date);
-  //     } else {
-  //       this.endDate = new Date(date);
-  //     }
-  //     console.log('结束了', this.formatDate(this.endDate))
-  //     return;
-  //   }
-
-  //   // ③ start + end 都存在，再点击就是重新开始
-  //   this.startDate = new Date(date);
-  //   this.endDate = null;
-  // },
-
-  // 日历内部的 input 不需要使用（否则会影响选区）
   onSelectDay(e) {
+    this.calendarValue = e;
   },
 
   // -------------------------
@@ -529,7 +535,7 @@ export default {
       let sum2 = 0;
       this.list2.forEach(item => {
         // 只有勾选参与计算的才统计
-        if (item.default) {
+        if (item.isSelected) {
           // 注意：这里直接取 item.wage，也就是你手动修改后的值
           sum2 += Number(item.wage) || 0; 
         }
@@ -538,7 +544,7 @@ export default {
       // 2. 重新统计 list3 (兼职) 的当前工资总和
       let sum3 = 0;
       this.list3.forEach(item => {
-        if (item.default) {
+        if (item.isSelected) {
           sum3 += Number(item.wage) || 0;
         }
       });
@@ -548,7 +554,7 @@ export default {
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.default);
+      let list11 = this.list1.filter(item => item.isSelected);
       this.splitFairForObjects(list11, this.totalTips2);
 
       // 5. 强制刷新视图 (Vue 2 有时需要)
@@ -583,28 +589,29 @@ export default {
       let sum1 = 0
       let sum2 = 0
       this.list2.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = Number(res.daily)+Number(res.ot?res.ot:0)
           sum1 += res.wage
         }
       })
       this.list3.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           res.wage = Math.round(Number((Number(res.hr)-Number(res.buzhu))*Number(res.time1))+Number(Number(res.ot)*Number(res.time2?res.time2:0)))
           sum2 += res.wage
         }
       })
       this.totalTips2 = Number(this.totalTips1-sum1-sum2)
-      let list11 = this.list1.filter(item => item.default);
+      let list11 = this.list1.filter(item => item.isSelected);
+      console.log(list11)
       this.splitFairForObjects(list11, this.totalTips2)
       this.$forceUpdate()
     },
     selected1(index){
-      //this.$set(this.list1, index, {...this.list1[index],default:!this.list1[index].default})
-      this.list1[index].default = !this.list1[index].default
+      //this.$set(this.list1, index, {...this.list1[index],isSelected:!this.list1[index].isSelected})
+      this.list1[index].isSelected = !this.list1[index].isSelected
       let sum = 0
       this.list1.map(res=>{
-        if(res.default){
+        if(res.isSelected){
           sum += Number(res.percent)
         }
       })
@@ -612,13 +619,13 @@ export default {
       this.$forceUpdate()
     },
     selected2(index){
-      console.log(this.list1[index].default)
-      //this.$set(this.list1, index, {...this.list1[index],default:!this.list1[index].default})
-      this.list2[index].default = !this.list2[index].default
+      console.log(this.list1[index].isSelected)
+      //this.$set(this.list1, index, {...this.list1[index],isSelected:!this.list1[index].isSelected})
+      this.list2[index].isSelected = !this.list2[index].isSelected
       this.$forceUpdate()
     },
     selected3(index){
-      this.list3[index].default = !this.list3[index].default
+      this.list3[index].isSelected = !this.list3[index].isSelected
       this.$forceUpdate()
     },
     test(){
@@ -641,6 +648,7 @@ export default {
         }).then(() => {
             this.list1.splice(index,1)
             localStorage.setItem('list1', JSON.stringify(this.list1));
+            this.update()
           this.$message({
             type: 'success',
             message: '删除成功!'
@@ -655,6 +663,7 @@ export default {
         }).then(() => {
           this.list2.splice(index,1)
           localStorage.setItem('list2', JSON.stringify(this.list2));
+          this.update()
           this.$message({
             type: 'success',
             message: '删除成功!'
@@ -670,6 +679,7 @@ export default {
         }).then(() => {
           this.list3.splice(index,1)
           localStorage.setItem('list3', JSON.stringify(this.list3));
+          this.update()
           this.$message({
             type: 'success',
             message: '删除成功!'
@@ -700,74 +710,198 @@ export default {
       }
       this.getList()
     },
-     splitFairForObjects(list, totalMoneyRaw) {
-    // 1. 转数字并校验
-    const totalMoney = Number(totalMoneyRaw);
-    if (!isFinite(totalMoney) || totalMoney < 0) {
-      console.error('totalMoney must be a non-negative number', totalMoneyRaw);
-      return list;
+    splitFairForObjects(list, totalMoneyRaw) {
+  const totalMoney = Number(totalMoneyRaw);
+  if (!isFinite(totalMoney) || totalMoney < 0) return list;
+
+  // ---- 确保 benefit 字段存在 ----
+  list.forEach(x => {
+    if (!isFinite(Number(x.benefit))) x.benefit = 0;
+  });
+
+  // ---- 和你原来一样的 scaling ----
+  const decimals = list.map(it => {
+    const s = String(it.percent || '');
+    const m = (s.split('.')[1] || '').length;
+    return isFinite(m) ? m : 0;
+  });
+  const scale = Math.pow(10, Math.max(...decimals));
+  const finalScale = scale * 1000;
+
+  const scaled = list.map((item, idx) => {
+    const p = Number(item.percent);
+    const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
+    return { __origIndex: idx, pScaled, item };
+  });
+
+  const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
+  if (totalScaled === 0) return list;
+
+  // ---- 基础分配（不变） ----
+  scaled.forEach(x => {
+    const numerator = totalMoney * x.pScaled;
+    x.intPart = Math.floor(numerator / totalScaled);
+    x.rem = numerator % totalScaled;
+  });
+
+  let allocated = scaled.reduce((s, x) => s + x.intPart, 0);
+  let remain = totalMoney - allocated;
+  if (remain < 0) remain = 0;
+
+  // =====================================================
+  //      ★★ 改造核心：余数按 benefit 优先补偿 ★★
+  // =====================================================
+  const rank = scaled.slice().sort((a, b) => {
+    // 1. benefit 小的优先（补偿）
+    if (a.item.benefit !== b.item.benefit) {
+      return a.item.benefit - b.item.benefit;
     }
 
-    // 2. 决定 scale：根据 percents 中最大的十进制位数来放大为整数
-    const decimals = list.map(it => {
-      const s = String(it.percent === undefined ? '' : it.percent);
-      const m = (s.split('.')[1] || '').length;
-      return isFinite(m) ? m : 0;
-    });
-    const maxDec = Math.max(0, ...decimals);
-    const scale = Math.pow(10, maxDec); // e.g. percent 0.9 => scale 10, 0.75 => 100
+    // 2. benefit 相同 → rem 大的优先（尽量精确）
+    if (a.rem !== b.rem) return b.rem - a.rem;
 
-    // 为了更保险（把1变成1000而不是1），我们再把 scale 再乘以 10 或 1000 以避免太小的总Scaled值
-    // 但不能太大以致溢出；这行可按需调整。下面采用 *1000 以得到较精细的整数比例（常用）。
-    const finalScale = scale * 1000;
+    // 3. 最后按数组顺序避免随机性
+    return a.__origIndex - b.__origIndex;
+  });
 
-    // 3. 计算 scaled percents（整数）
-    const scaled = list.map((item, idx) => {
-      const p = Number(item.percent);
-      const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
-      return { __origIndex: idx, pScaled, item };
-    });
+  // 给前 remain 个补偿
+  rank.slice(0, remain).forEach(x => {
+    x.intPart += 1;
+    x.item.benefit += 1;   // 本次得到补偿 → benefit +1
+  });
 
-    const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
-    if (totalScaled === 0) {
-      console.error('total percent scaled is zero');
-      return list;
-    }
+  // =====================================================
+  //      ★★ 同 percent 的人若没拿余数，将来会被补偿 ★★
+  // =====================================================
 
-    // 4. 用整数算每人的整数份额与余数（以 totalScaled 为模）
-    //    numerator = totalMoney * pScaled
-    scaled.forEach(x => {
-      const numerator = totalMoney * x.pScaled; // 整数乘法
-      x.intPart = Math.floor(numerator / totalScaled); // 整数部分
-      x.rem = numerator % totalScaled; // 余数（用于比较谁优先拿剩下的）
-    });
+  // ---- 写回 wage ----
+  scaled.forEach(x => {
+    const idx = x.__origIndex;
+    this.$set(list[idx], 'wage', x.intPart);
+  });
+  return list;
+},
+    //每次都一样
+//     splitFairForObjects(list, totalMoneyRaw) {
+//   const totalMoney = Number(totalMoneyRaw);
+//   if (!isFinite(totalMoney) || totalMoney < 0) return list;
 
-    // 5. 计算已分配与剩余（用整数）
-    const allocated = scaled.reduce((s, x) => s + x.intPart, 0);
-    let remain = totalMoney - allocated;
-    if (remain < 0) remain = 0;
+//   // ---- 1. 按 percent 分组 ----
+//   const groups = {}; 
+//   list.forEach((item, index) => {
+//     const p = Number(item.percent);
+//     if (!isFinite(p)) return;
+//     if (!groups[p]) groups[p] = [];
+//     groups[p].push(index);
+//   });
 
-    // 6. 按余数从大到小分配剩余；余数相等时按原数组索引升序（确定性）
-    scaled
-      .slice()
-      .sort((a, b) => {
-        if (b.rem !== a.rem) return b.rem - a.rem;
-        return a.__origIndex - b.__origIndex;
-      })
-      .slice(0, remain)
-      .forEach(x => x.intPart += 1);
+//   // ---- 2. 计算每个组的权重（percent × 人数）----
+//   const groupInfos = Object.entries(groups).map(([pStr, idxArr]) => {
+//     const p = Number(pStr);
+//     return {
+//       percent: p,
+//       indexes: idxArr,
+//       weight: p * idxArr.length   // 组权重 = 组人数 × percent
+//     };
+//   });
 
-    // 7. 写回 wage 字段（使用 Vue.set 保证响应式），并清理临时字段
-    scaled.forEach(x => {
-      const idx = x.__origIndex;
-      this.$set(list[idx], 'wage', x.intPart);
-      // 可选：删除临时字段
-      delete x.intPart;
-      delete x.rem;
-      delete x.__origIndex;
-    });
-    return list;
-  },
+//   const totalWeight = groupInfos.reduce((s, g) => s + g.weight, 0);
+//   if (totalWeight === 0) return list;
+
+//   // ---- 3. 按组分配金额 (整数) ----
+//   let remaining = totalMoney;
+
+//   groupInfos.forEach(g => {
+//     const numerator = totalMoney * g.weight;
+//     g.money = Math.floor(numerator / totalWeight);  // 该组总金额
+//     remaining -= g.money;
+//   });
+
+//   // ---- 4. 把剩余的钱按组权重从大到小继续分配 ----
+//   groupInfos
+//     .sort((a, b) => b.weight - a.weight)
+//     .slice(0, remaining)
+//     .forEach(g => g.money++);
+
+//   // ---- 5. 把组内金额平均给每个人 ----
+//   groupInfos.forEach(g => {
+//     const each = Math.floor(g.money / g.indexes.length);
+//     g.indexes.forEach(i => {
+//       list[i].wage = each;
+//     });
+//   });
+
+//   return list;
+// },
+
+  //    splitFairForObjects(list, totalMoneyRaw) {
+  //   // 1. 转数字并校验
+  //   const totalMoney = Number(totalMoneyRaw);
+  //   if (!isFinite(totalMoney) || totalMoney < 0) {
+  //     console.error('totalMoney must be a non-negative number', totalMoneyRaw);
+  //     return list;
+  //   }
+
+  //   // 2. 决定 scale：根据 percents 中最大的十进制位数来放大为整数
+  //   const decimals = list.map(it => {
+  //     const s = String(it.percent === undefined ? '' : it.percent);
+  //     const m = (s.split('.')[1] || '').length;
+  //     return isFinite(m) ? m : 0;
+  //   });
+  //   const maxDec = Math.max(0, ...decimals);
+  //   const scale = Math.pow(10, maxDec); // e.g. percent 0.9 => scale 10, 0.75 => 100
+
+  //   // 为了更保险（把1变成1000而不是1），我们再把 scale 再乘以 10 或 1000 以避免太小的总Scaled值
+  //   // 但不能太大以致溢出；这行可按需调整。下面采用 *1000 以得到较精细的整数比例（常用）。
+  //   const finalScale = scale * 1000;
+
+  //   // 3. 计算 scaled percents（整数）
+  //   const scaled = list.map((item, idx) => {
+  //     const p = Number(item.percent);
+  //     const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
+  //     return { __origIndex: idx, pScaled, item };
+  //   });
+
+  //   const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
+  //   if (totalScaled === 0) {
+  //     console.error('total percent scaled is zero');
+  //     return list;
+  //   }
+
+  //   // 4. 用整数算每人的整数份额与余数（以 totalScaled 为模）
+  //   //    numerator = totalMoney * pScaled
+  //   scaled.forEach(x => {
+  //     const numerator = totalMoney * x.pScaled; // 整数乘法
+  //     x.intPart = Math.floor(numerator / totalScaled); // 整数部分
+  //     x.rem = numerator % totalScaled; // 余数（用于比较谁优先拿剩下的）
+  //   });
+
+  //   // 5. 计算已分配与剩余（用整数）
+  //   const allocated = scaled.reduce((s, x) => s + x.intPart, 0);
+  //   let remain = totalMoney - allocated;
+  //   if (remain < 0) remain = 0;
+
+  //   // 6. 按余数从大到小分配剩余；余数相等时按原数组索引升序（确定性）
+  //   scaled
+  //     .slice()
+  //     .sort((a, b) => {
+  //       if (b.rem !== a.rem) return b.rem - a.rem;
+  //       return a.__origIndex - b.__origIndex;
+  //     })
+  //     .slice(0, remain)
+  //     .forEach(x => x.intPart += 1);
+
+  //   // 7. 写回 wage 字段（使用 Vue.set 保证响应式），并清理临时字段
+  //   scaled.forEach(x => {
+  //     const idx = x.__origIndex;
+  //     this.$set(list[idx], 'wage', x.intPart);
+  //     // 可选：删除临时字段
+  //     delete x.intPart;
+  //     delete x.rem;
+  //     delete x.__origIndex;
+  //   });
+  //   return list;
+  // },
     getList(){
         let list1 = localStorage.getItem('list1')!=null?JSON.parse(localStorage.getItem('list1')):[];
         let list2 = localStorage.getItem('list2')!=null?JSON.parse(localStorage.getItem('list2')):[];
@@ -776,7 +910,7 @@ export default {
         // --- 修改开始：处理 list2，确保 wage 和 ot 存在且响应式 ---
         this.list2 = list2.map(item => ({
           ...item,
-          default: true, // 原有逻辑
+          isSelected: true, // 原有逻辑
           wage: item.wage || '', // 强制初始化 wage
           ot: item.ot || ''      // 强制初始化 ot
         }));
@@ -785,7 +919,7 @@ export default {
         // --- 修改开始：处理 list3，同理 ---
         this.list3 = list3.map(item => ({
           ...item,
-          default: false, // 原有逻辑
+          isSelected: false, // 原有逻辑
           wage: item.wage || '',
           time1: item.time1 || '',
           time2: item.time2 || ''
@@ -795,12 +929,13 @@ export default {
         this.list1 = list1;
         let sum1 = 0;
         this.list1.forEach(item => {
-          item.default = true;
-          if (item.default && item.isShow) {
+          item.isSelected = true;
+          if (item.isSelected && item.isShow) {
             sum1 += Number(item.percent);
           }
         });
         this.totalPercent = sum1.toFixed(1);
+        
     },
     getTodayString() {
     const date = new Date();
@@ -809,86 +944,277 @@ export default {
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
   },
-
+ 
   // 保存今日工资到历史记录
+   normalizeRecord(r) {
+      return {
+        date: r.date || null,
+
+        userId:
+          (r.userId !== undefined && r.userId !== null) ? r.userId :
+          (r.user_id !== undefined && r.user_id !== null) ? r.user_id :
+          (r.id !== undefined && r.id !== null) ? r.id :
+          null,
+
+        name: r.name || null,
+        type: Number(r.type) || null,
+        wage: Number(r.wage) || 0,
+
+        percent: r.percent || null,
+        daily: r.daily || null,
+        ot: r.ot || null,
+
+        hr: r.hr || null,
+        time1: r.time1 || null,
+        time2: r.time2 || null,
+        buzhu: r.buzhu || null
+      };
+  },
+  getHistory() {
+    this.$http.get('/getHistory')
+      .then(res => {
+        const backendRecords = res.data || [];
+
+        // 转成统一格式
+        const normalized = backendRecords.map(r => this.normalizeRecord(r));
+
+        // 保存到 localStorage
+        localStorage.setItem('wage_history', JSON.stringify(normalized));
+
+        //this.$message.success(`后台数据已全部保存到本地，共 ${normalized.length} 条记录`);
+      })
+      .catch(err => {
+        this.$message.error("后台数据获取失败");
+        console.error(err);
+      });
+  },
   saveToHistory() {
-    // 1. 检查是否已经计算过
     if (!this.isCount) {
-      this.$message.warning('请先点击计算后再保存！');
-      return;
+    this.$message.warning('请先点击计算后再保存！');
+    return;
+  }
+
+  const todayStr = this.getTodayString();
+
+  // -------------------------
+  // 1. 读取 localStorage 历史记录
+  // -------------------------
+  let history = localStorage.getItem('wage_history');
+  history = history ? JSON.parse(history) : [];
+
+  // 删除同一天旧数据（幂等）
+  history = history.filter(item => item.date !== todayStr);
+
+  // -------------------------
+  // 2. 统一结构转换函数
+  // -------------------------
+  function normalizeRecord(r) {
+    return {
+      date: r.date || todayStr,
+      userId: r.userId || r.user_id || r.id || null,
+      name: r.name || null,
+      type: Number(r.type) || null,
+      wage: Number(r.wage) || 0,
+
+      // type 1 提成
+      percent: r.percent || null,
+
+      // type 2 日薪
+      daily: r.daily || null,
+      ot: r.ot || null,
+
+      // type 3 时薪
+      hr: r.hr || null,
+      time1: r.time1 || null,
+      time2: r.time2 || null,
+      buzhu: r.buzhu || null,
+    };
+  }
+
+  // -------------------------
+  // 3. 收集今日记录（前端 List 1/2/3）
+  // -------------------------
+  let dailyRecords = [];
+
+  // List 1（提成）
+  this.list1.forEach(item => {
+    if (item.isSelected && item.wage > 0) {
+      dailyRecords.push(normalizeRecord({
+        date: todayStr,
+        userId: item.id,
+        name: item.name,
+        type: 1,
+        wage: item.wage,
+        percent: item.percent
+      }));
     }
+  });
 
-    const todayStr = this.getTodayString(); // 你也可以绑定一个 el-date-picker 变量来选日期
+  // List 2（日薪）
+  this.list2.forEach(item => {
+    if (item.isSelected && item.wage > 0) {
+      dailyRecords.push(normalizeRecord({
+        date: todayStr,
+        userId: item.id,
+        name: item.name,
+        type: 2,
+        wage: item.wage,
+        daily: item.daily,
+        ot: item.ot
+      }));
+    }
+  });
 
-    // 2. 读取现有历史记录
-    let history = localStorage.getItem('wage_history');
-    history = history ? JSON.parse(history) : [];
+  // List 3（兼职）
+  this.list3.forEach(item => {
+    if (item.isSelected && item.wage > 0) {
+      dailyRecords.push(normalizeRecord({
+        date: todayStr,
+        userId: item.id,
+        name: item.name,
+        type: 3,
+        wage: item.wage,
+        hr: item.hr,
+        time1: item.time1,
+        time2: item.time2,
+        buzhu: item.buzhu
+      }));
+    }
+  });
 
-    // 3. 【关键步骤】删除“今天”已有的记录
-    history = history.filter(item => item.date !== todayStr);
+  if (dailyRecords.length === 0) {
+    this.$message.warning('今日没有任何工资记录。');
+    return;
+  }
 
-    // 4. 收集所有列表的数据
-    let dailyRecords = [];
+  // -------------------------
+  // 4. 追加并保存到 localStorage
+  // -------------------------
+  history = [...history, ...dailyRecords];
+
+  localStorage.setItem('wage_history', JSON.stringify(history));
+
+  this.$message.success(`保存成功！日期: ${todayStr}，共 ${dailyRecords.length} 条记录。`);
+    // 1. 检查是否已经计算过
+    // if (!this.isCount) {
+    //   this.$message.warning('请先点击计算后再保存！');
+    //   return;
+    // }
+
+    // const todayStr = this.getTodayString(); // 你也可以绑定一个 el-date-picker 变量来选日期
+
+    // // 2. 读取现有历史记录
+    // let history = localStorage.getItem('wage_history');
+    // history = history ? JSON.parse(history) : [];
+
+    // // 3. 【关键步骤】删除“今天”已有的记录
+    // history = history.filter(item => item.date !== todayStr);
+
+    // // 4. 收集所有列表的数据
+    // let dailyRecords = [];
     
-    // 处理 List 1 (全职)
-    this.list1.forEach(item => {
-      if (item.default && item.wage > 0) {
-        dailyRecords.push({
-          date: todayStr,
-          userId: item.id,
-          name: item.name,
-          type: 1, 
-          wage: Number(item.wage), 
-          percent: item.percent 
-        });
-      }
-    });
+    // // 处理 List 1 (全职)
+    // this.list1.forEach(item => {
+    //   if (item.isSelected && item.wage > 0) {
+    //     dailyRecords.push({
+    //       date: todayStr,
+    //       userId: item.id,
+    //       name: item.name,
+    //       type: 1, 
+    //       wage: Number(item.wage), 
+    //       percent: item.percent 
+    //     });
+    //   }
+    // });
 
-    // 处理 List 2 (日薪)
-    this.list2.forEach(item => {
-      if (item.default && item.wage > 0) {
-        dailyRecords.push({
-          date: todayStr,
-          userId: item.id,
-          name: item.name,
-          type: 2,
-          wage: Number(item.wage),
-          daily: item.daily, 
-          ot: item.ot
-        });
-      }
-    });
+    // // 处理 List 2 (日薪)
+    // this.list2.forEach(item => {
+    //   if (item.isSelected && item.wage > 0) {
+    //     dailyRecords.push({
+    //       date: todayStr,
+    //       userId: item.id,
+    //       name: item.name,
+    //       type: 2,
+    //       wage: Number(item.wage),
+    //       daily: item.daily, 
+    //       ot: item.ot
+    //     });
+    //   }
+    // });
 
-    // 处理 List 3 (兼职)
-    this.list3.forEach(item => {
-      if (item.default && item.wage > 0) {
-        dailyRecords.push({
-          date: todayStr,
-          userId: item.id,
-          name: item.name,
-          type: 3,
-          wage: Number(item.wage),
-          hr: item.hr,
-          time1: item.time1,
-          time2: item.time2, // ✨ 新增：保存第二个时间点
-          buzhu: item.buzhu
-        });
-      }
-    });
+    // // 处理 List 3 (兼职)
+    // this.list3.forEach(item => {
+    //   if (item.isSelected && item.wage > 0) {
+    //     dailyRecords.push({
+    //       date: todayStr,
+    //       userId: item.id,
+    //       name: item.name,
+    //       type: 3,
+    //       wage: Number(item.wage),
+    //       hr: item.hr,
+    //       time1: item.time1,
+    //       time2: item.time2, // ✨ 新增：保存第二个时间点
+    //       buzhu: item.buzhu
+    //     });
+    //   }
+    // });
 
-    // 5. 合并并保存
+    // // 5. 合并并保存
+    // if (dailyRecords.length === 0) {
+    //   this.$message.warning('没有产生任何工资记录，未保存。');
+    //   return;
+    // }
+
+    // // 将新记录追加到历史记录中
+    // history = [...history, ...dailyRecords];
+    
+    // // 写入 localStorage
+    // localStorage.setItem('wage_history', JSON.stringify(history));
+    // this.$message.success(`保存成功！日期: ${todayStr}，共 ${dailyRecords.length} 条记录。`);
+
     if (dailyRecords.length === 0) {
-      this.$message.warning('没有产生任何工资记录，未保存。');
-      return;
+        this.$message.warning('没有产生任何工资记录，未保存。');
+        return;
     }
 
-    // 将新记录追加到历史记录中
-    history = [...history, ...dailyRecords];
+    // 4. 【新增】发送数据到 Laravel 后台
+    const payload = {
+        date: todayStr,
+        records: dailyRecords
+    };
     
-    // 写入 localStorage
-    localStorage.setItem('wage_history', JSON.stringify(history));
+    // 可以添加 loading 状态
+    // this.isSaving = true; 
 
-    this.$message.success(`保存成功！日期: ${todayStr}，共 ${dailyRecords.length} 条记录。`);
+    // 使用 axios 发送 POST 请求到 Laravel API
+    // 假设您的后端服务运行在 /api/wage-records
+    this.$http.post('/history', payload)
+        .then(response => {
+            // 后台保存成功后，再进行本地 localStorage 的保存 (可选，通常只在后台保存成功后才进行本地更新)
+            // 假设您还需要保持本地历史记录功能，执行原代码中的本地保存逻辑
+            
+            // --- 原本地保存逻辑开始 ---
+            let history = localStorage.getItem('wage_history');
+            history = history ? JSON.parse(history) : [];
+            // 删除今天的记录 (为了和后台行为保持一致，但如果以后台为准，这步可以省略或改为从后台获取)
+            history = history.filter(item => item.date !== todayStr);
+            // 合并新记录
+            history = [...history, ...dailyRecords];
+            localStorage.setItem('wage_history', JSON.stringify(history));
+            // --- 原本地保存逻辑结束 ---
+
+            this.$message.success(`数据同步后台并保存成功！日期: ${response.data.date}，共 ${response.data.count} 条记录。`);
+        })
+        .catch(error => {
+            console.error('保存失败:', error);
+            const errorMessage = error.response && error.response.data && error.response.data.message
+                                 ? error.response.data.message 
+                                 : '后台数据保存失败，请检查网络或控制台错误。';
+            this.$message.error(errorMessage);
+        })
+        .finally(() => {
+            // this.isSaving = false;
+        });
   },
     getMax(){
         let list1 = localStorage.getItem('list1')!=null?JSON.parse(localStorage.getItem('list1')):[];
@@ -930,9 +1256,11 @@ export default {
       }
       if(this.isEdit){
         if(this.type==1&&this.type==this.currentList){
+          //list1中修改
           this.list1[this.currentIndex].name = this.type1Name
           this.list1[this.currentIndex].percent = this.type1percent
           localStorage.setItem('list1', JSON.stringify(this.list1));
+          this.update()
           this.$message({
               message: '修改成功',
               type: 'success'
@@ -941,6 +1269,7 @@ export default {
           this.isClosed = true
         }else{
           if(this.currentList==2){
+            //从list2里变成list1里
             this.list2.splice(this.currentIndex, 1)
             let obj = {}
             obj.name = this.type1Name
@@ -950,6 +1279,7 @@ export default {
             this.list1.push(obj)
             localStorage.setItem('list2', JSON.stringify(this.list2));
             localStorage.setItem('list1', JSON.stringify(this.list1));
+            this.update()
             this.$message({
                 message: '修改成功',
                 type: 'success'
@@ -971,10 +1301,12 @@ export default {
                 message: '修改成功',
                 type: 'success'
             });
+            this.update()
             this.isEdit = false
             this.isClosed = true
           }
         }
+
         return false
       }
       let isName = this.findName(this.type1Name)
@@ -1011,6 +1343,7 @@ export default {
           type: 'success'
       });
       this.getList()
+      this.update()
     },
     sub2(){
       if (!this.type2Name.trim()) {
@@ -1032,6 +1365,7 @@ export default {
           });
           this.isEdit = false
           this.isClosed = true
+          this.update()
         }else{
           if(this.currentList==1){
             this.list1.splice(this.currentIndex, 1)
@@ -1051,6 +1385,7 @@ export default {
             });
             this.isEdit = false
             this.isClosed = true
+            this.update()
           }
           if(this.currentList==3){
             this.list3.splice(this.currentIndex, 1)
@@ -1068,6 +1403,7 @@ export default {
             });
             this.isEdit = false
             this.isClosed = true
+            this.update()
           }
         }
         return false
@@ -1106,6 +1442,22 @@ export default {
           type: 'success'
       });
       this.getList()
+      this.update()
+    },
+    update(){
+      const dataToSync = {
+        list1: JSON.parse(localStorage.getItem("list1")),
+        list2: JSON.parse(localStorage.getItem("list2")),
+        list3: JSON.parse(localStorage.getItem("list3")),
+      }
+      this.$http.post('/update1',{
+        list:dataToSync
+      })
+      .then(res => {
+      })
+      .catch(error => {
+          console.error('请求失败:', error)
+      })
     },
     sub3(){
       if (!this.type3Name.trim()) {
@@ -1123,6 +1475,7 @@ export default {
           this.list3[this.currentIndex].ot = this.type3hr2
           this.list3[this.currentIndex].buzhu = this.type3hr3
           localStorage.setItem('list3', JSON.stringify(this.list3));
+          this.update()
           this.$message({
               message: '修改成功',
               type: 'success'
@@ -1151,6 +1504,7 @@ export default {
             });
             this.isEdit = false
             this.isClosed = true
+            this.update()
           }
           if(this.currentList==2){
             this.list2.splice(this.currentIndex, 1)
@@ -1164,6 +1518,7 @@ export default {
             this.list3.push(obj)
             localStorage.setItem('list3', JSON.stringify(this.list3));
             localStorage.setItem('list2', JSON.stringify(this.list2));
+            this.update()
             this.$message({
                 message: '修改成功',
                 type: 'success'
@@ -1213,6 +1568,7 @@ export default {
       });
       this.getList()
       this.isClosed = true
+      this.update()
     },
     open(){
       this.type = 1
@@ -1256,7 +1612,7 @@ export default {
     width: 100%;
     height: 120px;
     margin-top: -30px;
-    border: 1px solid black;
+    border: 1px solid #f2f2f2;
     box-sizing: border-box;
     padding: 10px;
   }
