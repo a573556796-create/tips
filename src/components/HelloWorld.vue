@@ -518,13 +518,21 @@ export default {
       console.log(ymd);
     },
     changewage2(index){
+      var that = this
       if(this.isCount){
          this.recalculateList1();
+         setTimeout(() => {
+            that.saveToHistory()
+          }, 10000)
       }
     },
     changewage3(index){
+      var that = this
       if(this.isCount){
          this.recalculateList1();
+         setTimeout(() => {
+          that.saveToHistory()
+        }, 10000)
       }
     },
     recalculateList1() {
@@ -605,6 +613,11 @@ export default {
       console.log(list11)
       this.splitFairForObjects(list11, this.totalTips2)
       this.$forceUpdate()
+      var that = this
+      setTimeout(() => {
+        that.saveToHistory()
+      }, 10000)
+
     },
     selected1(index){
       //this.$set(this.list1, index, {...this.list1[index],isSelected:!this.list1[index].isSelected})
@@ -711,76 +724,182 @@ export default {
       this.getList()
     },
     splitFairForObjects(list, totalMoneyRaw) {
-  const totalMoney = Number(totalMoneyRaw);
-  if (!isFinite(totalMoney) || totalMoney < 0) return list;
+    const totalMoney = Number(totalMoneyRaw);
+    let history = JSON.parse(localStorage.getItem('wage_history')) || [];
+    if (!isFinite(totalMoney) || totalMoney < 0) return list;
 
-  // ---- 确保 benefit 字段存在 ----
-  list.forEach(x => {
-    if (!isFinite(Number(x.benefit))) x.benefit = 0;
-  });
+    // 1. 精度转换（确保 1.00 和 1 比较时是相等的）
+    const decimals = list.map(it => (String(it.percent || '').split('.')[1] || '').length);
+    const scale = Math.pow(10, Math.max(...decimals));
+    const finalScale = scale * 1000;
 
-  // ---- 和你原来一样的 scaling ----
-  const decimals = list.map(it => {
-    const s = String(it.percent || '');
-    const m = (s.split('.')[1] || '').length;
-    return isFinite(m) ? m : 0;
-  });
-  const scale = Math.pow(10, Math.max(...decimals));
-  const finalScale = scale * 1000;
+    const scaled = list.map((item, idx) => {
+        const p = Number(item.percent);
+        const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
+        return { __origIndex: idx, pScaled, item };
+    });
 
-  const scaled = list.map((item, idx) => {
-    const p = Number(item.percent);
-    const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
-    return { __origIndex: idx, pScaled, item };
-  });
+    const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
+    if (totalScaled === 0) return list;
 
-  const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
-  if (totalScaled === 0) return list;
+    // 2. 基础分配
+    scaled.forEach(x => {
+        const numerator = totalMoney * x.pScaled;
+        x.intPart = Math.floor(numerator / totalScaled);
+        x.rem = numerator % totalScaled;
+    });
 
-  // ---- 基础分配（不变） ----
-  scaled.forEach(x => {
-    const numerator = totalMoney * x.pScaled;
-    x.intPart = Math.floor(numerator / totalScaled);
-    x.rem = numerator % totalScaled;
-  });
+    let remain = totalMoney - scaled.reduce((s, x) => s + x.intPart, 0);
 
-  let allocated = scaled.reduce((s, x) => s + x.intPart, 0);
-  let remain = totalMoney - allocated;
-  if (remain < 0) remain = 0;
+    // =====================================================
+    // ★ 核心：查找两人最近一次的工资差额 ★
+    // =====================================================
+    const getHistoryBias = (userA, userB) => {
+        // 先按日期分组
+        const groups = {};
+        history.forEach(rec => {
+            if (!groups[rec.date]) groups[rec.date] = [];
+            groups[rec.date].push(rec);
+        });
 
-  // =====================================================
-  //      ★★ 改造核心：余数按 benefit 优先补偿 ★★
-  // =====================================================
-  const rank = scaled.slice().sort((a, b) => {
-    // 1. benefit 小的优先（补偿）
-    if (a.item.benefit !== b.item.benefit) {
-      return a.item.benefit - b.item.benefit;
-    }
+        // 按日期从新到旧排序
+        const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
 
-    // 2. benefit 相同 → rem 大的优先（尽量精确）
-    if (a.rem !== b.rem) return b.rem - a.rem;
+        for (let date of sortedDates) {
+            const dayRecords = groups[date];
+            const recA = dayRecords.find(r => r.userId === userA.userId);
+            const recB = dayRecords.find(r => r.userId === userB.userId);
 
-    // 3. 最后按数组顺序避免随机性
-    return a.__origIndex - b.__origIndex;
-  });
+            // 只有当两人都在，且工资【不相等】时才有参考价值
+            if (recA && recB) {
+                const wA = Number(recA.wage || 0);
+                const wB = Number(recB.wage || 0);
+                if (wA !== wB) {
+                    return wA - wB; // A比B多，返回正数
+                }
+            }
+        }
+        return 0;
+    };
 
-  // 给前 remain 个补偿
-  rank.slice(0, remain).forEach(x => {
-    x.intPart += 1;
-    x.item.benefit += 1;   // 本次得到补偿 → benefit +1
-  });
+    // =====================================================
+    // ★ 核心：重新定义排序优先级 ★
+    // =====================================================
+    const rank = scaled.slice().sort((a, b) => {
+        // 第一优先级：点数（percent）
+        // 点数高的必须先拿钱
+        if (a.pScaled !== b.pScaled) {
+            return b.pScaled - a.pScaled; 
+        }
 
-  // =====================================================
-  //      ★★ 同 percent 的人若没拿余数，将来会被补偿 ★★
-  // =====================================================
+        // 第二优先级：历史平衡
+        // 如果点数完全一样，看历史谁拿得多
+        const bias = getHistoryBias(a.item, b.item);
+        if (bias !== 0) {
+            // 如果 bias > 0 (A上次多)，返回正数让 A 往后排，B 往前排
+            return bias; 
+        }
 
-  // ---- 写回 wage ----
-  scaled.forEach(x => {
-    const idx = x.__origIndex;
-    this.$set(list[idx], 'wage', x.intPart);
-  });
-  return list;
+        // 第三优先级：数学余数
+        if (b.rem !== a.rem) {
+            return b.rem - a.rem;
+        }
+
+        return a.__origIndex - b.__origIndex;
+    });
+
+    // 3. 分配多出来的钱
+    rank.slice(0, remain).forEach(x => {
+        x.intPart += 1;
+    });
+
+    // 4. 写回结果
+    scaled.forEach(x => {
+        const idx = x.__origIndex;
+        list[idx].wage = x.intPart;
+        list[idx].wage2 = x.intPart;
+    });
+
+    console.log("历史修正后的分配列表：", list);
+    return list;
 },
+  //   splitFairForObjects(list, totalMoneyRaw) {
+  //       const totalMoney = Number(totalMoneyRaw);
+  //       let history = JSON.parse(localStorage.getItem('wage_history'));
+  //       console.log(history,88)
+  //       if (!isFinite(totalMoney) || totalMoney < 0) return list;
+
+  //       // ---- 确保 benefit 存在且为数字 ----
+  //       list.forEach(x => {
+  //         const b = Number(x.benefit);
+  //         x.benefit = isFinite(b) ? b : 0;
+  //       });
+
+  //       // ---- 找到 percent 的小数精度 ----
+  //       const decimals = list.map(it => {
+  //         const s = String(it.percent || '');
+  //         const m = (s.split('.')[1] || '').length;
+  //         return isFinite(m) ? m : 0;
+  //       });
+  //       const scale = Math.pow(10, Math.max(...decimals));
+  //       const finalScale = scale * 1000;
+
+  //       // ---- 构造 scaled ----
+  //       const scaled = list.map((item, idx) => {
+  //         const p = Number(item.percent);
+  //         const pScaled = isFinite(p) ? Math.round(p * finalScale) : 0;
+  //         return { __origIndex: idx, pScaled, item };
+  //       });
+
+  //       const totalScaled = scaled.reduce((s, x) => s + x.pScaled, 0);
+  //       if (totalScaled === 0) return list;
+
+  //       // ---- 基础分配 ----
+  //       scaled.forEach(x => {
+  //         const numerator = totalMoney * x.pScaled;
+  //         x.intPart = Math.floor(numerator / totalScaled);
+  //         x.rem = numerator % totalScaled;
+  //       });
+
+  //       let allocated = scaled.reduce((s, x) => s + x.intPart, 0);
+  //       let remain = totalMoney - allocated;
+  //       if (remain < 0) remain = 0;
+
+  //       // =====================================================
+  //       //  ★★ 余数分配逻辑：按 benefit 小的优先补偿 ★★
+  //       // =====================================================
+
+  //       // 排序规则：
+  //       // 1. benefit 小 → 优先
+  //       // 2. benefit 相同 → remainder 大 → 优先
+  //       // 3. 最后按原始顺序
+  //       const rank = scaled.slice().sort((a, b) => {
+  //         if (a.item.benefit !== b.item.benefit) {
+  //           return a.item.benefit - b.item.benefit;
+  //         }
+  //         if (a.rem !== b.rem) {
+  //           return b.rem - a.rem;
+  //         }
+  //         return a.__origIndex - b.__origIndex;
+  //       });
+
+  //       // 给前 remain 个补偿
+  //       rank.slice(0, remain).forEach(x => {
+  //         x.intPart += 1;        // 多拿 1 元
+  //         x.item.benefit += 1;   // benefit 累加
+  //       });
+
+  //       // =====================================================
+  //       //             ★ 写回 wage ★
+  //       // =====================================================
+  //       scaled.forEach(x => {
+  //         const idx = x.__origIndex;
+  //         list[idx].wage2=list[idx].wage = x.intPart;
+  //       });
+
+  //       console.log("分配结果：", list);
+  //       return list;
+  // },
     //每次都一样
 //     splitFairForObjects(list, totalMoneyRaw) {
 //   const totalMoney = Number(totalMoneyRaw);
@@ -935,16 +1054,14 @@ export default {
           }
         });
         this.totalPercent = sum1.toFixed(1);
-        
     },
     getTodayString() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  },
- 
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
   // 保存今日工资到历史记录
    normalizeRecord(r) {
       return {
@@ -961,6 +1078,7 @@ export default {
         wage: Number(r.wage) || 0,
 
         percent: r.percent || null,
+        benefit: r.benefit || null,
         daily: r.daily || null,
         ot: r.ot || null,
 
@@ -988,6 +1106,8 @@ export default {
         console.error(err);
       });
   },
+
+
   saveToHistory() {
     if (!this.isCount) {
     this.$message.warning('请先点击计算后再保存！');
@@ -995,7 +1115,8 @@ export default {
   }
 
   const todayStr = this.getTodayString();
-
+  //console.log(todayStr)
+  //const todayStr = '2025-12-10';
   // -------------------------
   // 1. 读取 localStorage 历史记录
   // -------------------------
@@ -1018,7 +1139,7 @@ export default {
 
       // type 1 提成
       percent: r.percent || null,
-
+      benefit: r.benefit || null,
       // type 2 日薪
       daily: r.daily || null,
       ot: r.ot || null,
@@ -1035,7 +1156,7 @@ export default {
   // 3. 收集今日记录（前端 List 1/2/3）
   // -------------------------
   let dailyRecords = [];
-
+  
   // List 1（提成）
   this.list1.forEach(item => {
     if (item.isSelected && item.wage > 0) {
@@ -1043,13 +1164,14 @@ export default {
         date: todayStr,
         userId: item.id,
         name: item.name,
+        benefit:item.benefit,
         type: 1,
         wage: item.wage,
         percent: item.percent
       }));
     }
   });
-
+  console.log(this.list1,777)
   // List 2（日薪）
   this.list2.forEach(item => {
     if (item.isSelected && item.wage > 0) {
@@ -1091,7 +1213,6 @@ export default {
   // 4. 追加并保存到 localStorage
   // -------------------------
   history = [...history, ...dailyRecords];
-
   localStorage.setItem('wage_history', JSON.stringify(history));
 
   this.$message.success(`保存成功！日期: ${todayStr}，共 ${dailyRecords.length} 条记录。`);
@@ -1178,9 +1299,18 @@ export default {
     }
 
     // 4. 【新增】发送数据到 Laravel 后台
+    let obj2={
+      cash:this.cash,
+      credit:this.credit,
+      tips1:this.totalTips1,
+      tips2:this.totalTips2,
+      percent3: this.percent3,
+      totalPercent: this.totalPercent
+    }
     const payload = {
         date: todayStr,
-        records: dailyRecords
+        records: dailyRecords,
+        business: obj2
     };
     
     // 可以添加 loading 状态

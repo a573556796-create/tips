@@ -1,10 +1,13 @@
 <template>
   <div>
      <div style="width: 400px;">
-        <div style="display:flex;align-items: center;width: 500px;height: 100px;border: 1px solid black;justify-content: center;">
-          <el-checkbox style="margin-right: 30px;" v-model="isChecked" @change="changeMode">统计模式</el-checkbox>
-          <el-select v-model="selectedStaffId" placeholder="请选择工作人员">
-            <el-option v-for="item in staffList" :key="item.id"  :label="item.name" :value="item.id" />
+        <div style="display:flex;flex-direction: column;align-items: center;width: 500px;height: 100px;border: 1px solid black;justify-content: center;">
+          <!-- <el-checkbox style="margin-right: 30px;" v-model="isChecked" @change="changeMode">统计模式</el-checkbox> -->
+          <el-select v-model="selectedMode" @change="changeMode" placeholder="请选择工作人员">
+            <el-option v-for="item in options" :key="item.type"  :label="item.label" :value="item.type" />
+          </el-select>
+          <el-select v-model="selectedUserId" @change="search" placeholder="请选择工作人员">
+            <el-option v-for="item in allUser" :key="item.id"  :label="item.name" :value="item.id" />
           </el-select>
         </div>
         <div style="margin-bottom:8px;">
@@ -25,14 +28,26 @@
                         @click="selectRange(date)"
                       >
                         {{ date.getUTCDate() }}
+                        <div v-if="selectedMode === 2&&salaryMap[data.day]" class="salary">
+                          ${{ salaryMap[data.day] }}
+                        </div>
                       </div>
                     </template>
                   </el-calendar>
-                  <div class="result">
-                      <div class="r1">
+                  <div class="result" style="overflow: scroll;">
+                      <div v-if="selectedMode==3&&selectedUserId==10000">
+                        <div v-for="(item,index) in allUserSummary">
+                          <span v-if="item.type==1">{{item.name}}:(${{item.totalWage}})({{item.days}}天)</span>
+                          <span v-if="item.type==2">{{item.name}}:(${{item.totalWage}})({{item.days}}天)</span>
+                          <span v-if="item.type==3">{{item.name}}:(${{item.totalWage}})({{item.days}}天)({{item.totalTime1}}h<span v-if="item.totalTime2!==0">+加班{{item.totalTime2}}h</span>)</span>
+                        </div>
+                      </div>
+                      <div v-if="selectedMode==2">共计${{singleMonthTotal}}(共{{singleDays}}天<span v-if="totalTime1!=0">{{totalTime1}}小时，加班{{totalTime2}}小时</span>)</div>
+                      <div v-if="selectedMode==3&&selectedUserId!==10000">共计${{singleRangeTotal}}(共{{singleDays2}}天<span v-if="totalTime1!=0">{{totalTime1}}小时，加班{{totalTime2}}小时</span>)</div>
+                      <div class="r1" v-if="selectedMode==1">
                         <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==1">{{item.name}}:{{item.wage}}</div>
                       </div>
-                      <div class="r1">
+                      <div class="r1" v-if="selectedMode==1">
                         <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==2">{{item.name}}:{{item.wage}}</div>
                         <div style="margin-right: 5px" v-for="item in singleResult" v-if="item.type==3">{{item.name}}:{{item.wage}}({{item.time1}}h<span v-if="item.time2">+{{item.time2}}h</span>)</div>
                       </div>
@@ -48,13 +63,11 @@ export default {
     today.setHours(0, 0, 0, 0);
     today.setUTCHours(0,0,0,0);
     return {
-      selectedStaffId: null,
+      selectedMode:null,
+      selectedUserId: null,
       singleResult: [],
       selectedDate:'',
       todayLocalTimestamp: today.getTime(),
-      isPlus20:false,
-      isPlus30:false,
-      tongjiShow:false,
       isChecked:false,
       calendarValue: new Date(),
       startDate: null,
@@ -69,225 +82,368 @@ export default {
       isEdit: false,
       isEditId:null,
       isClosed: true,
-      listShow: false,
-      msg: '',
       checked: true,
       input:0,
       totalPercent:null,
       list1:[],
       list2:[],
       list3:[],
-      list22:[],
-      list33:[],
       options: [
-        { type: 1, label: '全职' },
-        { type: 2, label: '日薪' },
-        { type: 3, label: '兼职' }
+        // { type: 1, label: '普通模式' },
+        { type: 2, label: '整月模式' },
+        // { type: 3, label: '起止日期' }
       ],
-      type: 1,
-      type1Name:'',
-      type1percent: null,
-      type2Name:'',
-      type2daily: null,
-      type3Name:'',
-      type3hr: null,
-      type3hr2:null,
-      type3hr3:null,
+      type: null,
       maxId: null,
       currentList: null,
       currentIndex:null,
       currentId:null,
       isCount:false,
       startTime:null,
-      endTime:null
+      endTime:null,
+      allUser:[],
+      currentMonth:null,
+      singleMonth:[],
+      singleMonthTotal:0,//一个人的月度总工资
+      singleDays:0,
+      singleDays2:0,
+      totalTime1:0,
+      totalTime2:0,
+      allUserSummary:[]
     }
   },
     computed: {
+      salaryMap() {
+        return Object.fromEntries(
+          this.singleMonth.map(item => [item.date, item.wage])
+        )
+      },
       currentDisplayMonth() {
-        if (this.calendarValue instanceof Date) {
-        // 建议使用 UTC 方法获取年和月，以避免时区偏移导致的日期提前
-        const year = this.calendarValue.getUTCFullYear();
-        // getUTCMonth() 返回 0-11，需要 +1
-        const month = this.calendarValue.getUTCMonth() + 1; 
-        
-        // 如果您需要本地时间显示，但 calendarValue 确实被时区影响了，
-        // 那么使用 UTC 往往能锁定到该日期对象代表的那个“月”。
-        return `${year}年${month}月`; 
+          if (this.calendarValue instanceof Date) {
+          // 建议使用 UTC 方法获取年和月，以避免时区偏移导致的日期提前
+          const year = this.calendarValue.getUTCFullYear();
+          // getUTCMonth() 返回 0-11，需要 +1
+          const month = this.calendarValue.getUTCMonth() + 1; 
+          
+          // 如果您需要本地时间显示，但 calendarValue 确实被时区影响了，
+          // 那么使用 UTC 往往能锁定到该日期对象代表的那个“月”。
+          return `${year}年${month}月`;
+        }
+        return '无法获取月份';
       }
-      return '无法获取月份';
-      }
+    },
+    mounted(){
+      const year = this.calendarValue.getUTCFullYear();
+      const month = this.calendarValue.getUTCMonth() + 1;
+      console.log(this.calendarValue.getUTCFullYear(),month)
+      this.getList()
     },
     methods:{
-      changeMode(){
-        this.startDate = null;
-        this.endDate = null;
-      },
-      formatDate(date) {
-      // 解决跨时区 (如纽约时区) 导致日期偏差的问题
-      const year = date.getUTCFullYear();
-      // getUTCMonth() 返回 0-11，需要 +1
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
-      const day = String(date.getUTCDate()).padStart(2, '0'); 
-      return `${year}-${month}-${day}`;
-    },
-    single(date){
-      let getSalary = JSON.parse(localStorage.getItem('wage_history'));
-      this.singleResult =  getSalary.filter(item => item.date == date);
-      console.log(this.singleResult)
-    },
-    toLocalDate(str) {
-        const [y, m, d] = str.split('-').map(Number);
-        return new Date(y, m - 1, d);
-    },
-    selectRange(date) {
-        // 检查是否是单选模式 (this.isChecked 为 false)
-
-        if(!this.isChecked){
-            this.selectedDate = this.formatDate(date);
-            this.single(this.selectedDate);
-            
-            // 关键改动：使用 formatDate 打印，确保看到的是选择的日期
-            console.log('点击了日期：', this.selectedDate); 
-            return false;
-        }
-
-        if (this.isFutureDate(date)) return;
-
-        const current = this.toLocalDate(this.formatDate(date));
-        if (!this.startDate) {
-            this.startDate = current;
-            this.startTime=this.formatDate(this.startDate)
-            console.log('开始了',this.startTime);
-            return;
-        }
-
-        // ② 如果已经有 start 但没有 end → 设置 end
-        if (this.startDate && !this.endDate) {
-            const start = this.startDate.getTime();
-            const end = date.getTime();
-
-            // 若结束比开始早 → 交换
-            if (end < start) {
-                this.endDate = this.startDate;
-                this.startDate = new Date(date);
-            } else {
-                this.endDate = new Date(date);
+          changeMode(){
+            console.log(this.selectedMode)
+            this.startDate = null;
+            this.endDate = null;
+            this.singleResult=[]
+            this.singleMonthTotal=0
+            this.selectedUserId=null
+            this.salaryMap={}
+            this.singleDays = 0
+            this.singleMonth = this.singleMonth.map(item => ({
+              ...item,
+              wage: null   // 或 0，看你业务需求
+            }))
+            if(this.selectedMode==3){
+              this.isChecked = true
             }
+          },
+          getOneUserMonth(id){
+            const date = new Date(this.calendarValue);
+            const year = this.calendarValue.getUTCFullYear();;
+            // 补零处理，确保格式为 "2025-12"const month = 
+            const month = String(new Date(this.calendarValue).getUTCMonth() + 1).padStart(2, '0');
+            let current = `${year}-${month}`
+            console.log(current,77)
+            // let wage_history = localStorage.getItem('wage_history')!=null?JSON.parse(localStorage.getItem('wage_history')):[];
+            // const month_result = wage_history.filter(item => item.userId == id)
+            let wage_history = localStorage.getItem('wage_history') != null ? JSON.parse(localStorage.getItem('wage_history')) : [];
+            const month_result = wage_history.filter(item => {
+                return item.userId == id && item.date.startsWith(current);
+            });
+            this.singleMonth = month_result
+            let total = month_result.reduce((sum, item) => sum + Number(item.wage), 0)
+            let totalTime1 = month_result.reduce(
+              (sum, item) => item.type === 3 ? sum + Number(item.time1) : sum,
+              0
+            );
+            let totalTime2 = month_result.reduce(
+              (sum, item) => item.type === 3 ? sum + Number(item.time2) : sum,
+              0
+            );
+            this.singleDays = month_result.length
+            console.log(month_result.length,9)
+            this.singleMonthTotal = total
+            this.totalTime1=totalTime1
+            this.totalTime2=totalTime2
+          },
+          getAllUsersWorkSummaryByDateRange(startDate, endDate) {
+            let wage_history = localStorage.getItem('wage_history')
+              ? JSON.parse(localStorage.getItem('wage_history'))
+              : [];
+
+            const start = new Date(startDate).getTime();
+            const end = new Date(endDate).getTime();
+
+            const resultMap = {};
+
+            wage_history.forEach(item => {
+              if (!item.userId || !item.date) return;
+
+              const d = new Date(item.date).getTime();
+              if (isNaN(d) || d < start || d > end) return;
+
+              const userId = Number(item.userId);
+              const type = item.type || 'unknown';
+              const key = `${userId}_${type}`;
+
+              if (!resultMap[key]) {
+                resultMap[key] = {
+                  userId,
+                  name: item.name || '',
+                  type,
+                  totalWage: 0,
+                  days: 0,
+                  totalTime1: 0,
+                  totalTime2: 0
+                };
+              }
+
+              resultMap[key].totalWage += Number(item.wage || 0);
+              resultMap[key].days += 1;
+
+              if (type === 3) {
+                resultMap[key].totalTime1 += Number(item.time1 || 0);
+                resultMap[key].totalTime2 += Number(item.time2 || 0);
+              }
+            });
+
+            // 👇 关键优化：排序
+            const result = Object.values(resultMap).sort((a, b) => {
+              if (a.userId !== b.userId) {
+                return a.userId - b.userId; // id 小的在前
+              }
+              return a.type - b.type; // 同一人按 type 排（可删）
+            });
+
+            console.log('区间内所有人（已排序）：', result);
+
+            this.allUserSummary = result;
+          },
+          getOneUserByDateRange(id, startDate, endDate) {
+              let wage_history = localStorage.getItem('wage_history')
+                ? JSON.parse(localStorage.getItem('wage_history'))
+                : [];
+
+              const start = new Date(startDate).getTime();
+              const end = new Date(endDate).getTime();
+
+              const range_result = wage_history.filter(item => {
+                const d = new Date(item.date).getTime(); // 👈 确保字段名正确
+                return (
+                  item.userId == id &&
+                  d >= start &&
+                  d <= end
+                );
+              });
+
+              console.log('range_result', range_result);
+
+              let total = range_result.reduce(
+                (sum, item) => sum + Number(item.wage || 0),
+                0
+              );
+
+              this.singleRangeTotal = total;
+              this.singleDays2 = range_result.length;
+          },
+          search(){
+            // if(this.selectedMode==3){
+            //   this.startDate = null;
+            //   this.endDate = null;
+            // }
+            const month = new Date(this.calendarValue).getUTCMonth() + 1
+            console.log(month,88)
+            this.currentMonth = month
+            this.getOneUserMonth(this.selectedUserId)
+            if(this.selectedUserId!==null){
+               this.getOneUserByDateRange(this.selectedUserId,this.startDate,this.endDate)
+            }
+            console.log(this.selectedUserId,month,this.startDate.this.endDate)
+          },
+          getList(){
+            let list1 = localStorage.getItem('list1')!=null?JSON.parse(localStorage.getItem('list1')):[];
+            let list2 = localStorage.getItem('list2')!=null?JSON.parse(localStorage.getItem('list2')):[];
+            let list3 = localStorage.getItem('list3')!=null?JSON.parse(localStorage.getItem('list3')):[];
             
-            // 关键改动：使用 formatDate 打印，避免时区问题
-            // 注意：原代码中打印的是 this.end，假设是 this.endDate 的笔误，这里修正为 this.endDate
-            this.endTime=this.formatDate(this.endDate)
-            console.log('结束了', this.startTime,this.endTime);
-            // 如果原代码中 this.end 是一个存在的属性，请自行调整
-            // console.log('结束了', this.end); 
-            return;
-        }
+            // --- 修改开始：处理 list2，确保 wage 和 ot 存在且响应式 ---
+            this.list2 = list2.map(item => ({
+              ...item,
+              isSelected: true, // 原有逻辑
+              wage: item.wage || '', // 强制初始化 wage
+              ot: item.ot || ''      // 强制初始化 ot
+            }));
+            // --- 修改结束 ---
 
-        // ③ start + end 都存在，再点击就是重新开始
-        this.startDate = new Date(date);
-        this.endDate = null;
-        
-        // 关键改动：重新开始时也打印格式化后的日期
-        console.log('重新开始，新选择了',this.formatDate(this.startDate));
-    },
-  onSelectDay(e) {
-    this.calendarValue = e;
-  },
+            // --- 修改开始：处理 list3，同理 ---
+            this.list3 = list3.map(item => ({
+              ...item,
+              isSelected: false, // 原有逻辑
+              wage: item.wage || '',
+              time1: item.time1 || '',
+              time2: item.time2 || ''
+            }));
+            // --- 修改结束 ---
+            const result = [...list1, ...list2, ...list3].map(({ id, name }) => ({ id, name }))
+            result.unshift({id:10000,name:'所有人'})
+            this.allUser=result
+        },
+        formatDate(date) {
+          // 解决跨时区 (如纽约时区) 导致日期偏差的问题
+          const year = date.getUTCFullYear();
+          // getUTCMonth() 返回 0-11，需要 +1
+          const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+          const day = String(date.getUTCDate()).padStart(2, '0'); 
+          return `${year}-${month}-${day}`;
+        },
+        single(date){
+          let getSalary = JSON.parse(localStorage.getItem('wage_history'));
+          this.singleResult =  getSalary.filter(item => item.date == date);
+          console.log(this.singleResult)
+        },
+        toLocalDate(str) {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        },
+        selectRange(date) {
+            // 检查是否是单选模式 (this.isChecked 为 false)
+            if(this.selectedUserId==null){
+              this.$message.error('先选择人员');
+              return
+            }
+            if(!this.isChecked){
+                this.selectedDate = this.formatDate(date);
+                this.single(this.selectedDate);
+                
+                // 关键改动：使用 formatDate 打印，确保看到的是选择的日期
+                console.log('点击了日期：', this.selectedDate); 
+                return false;
+            }
 
-  // -------------------------
-  // 高亮逻辑
-  // -------------------------
-  isSameDay(a, b) {
-    if (!a || !b) return false;
-    return (
-      a.getUTCFullYear() === b.getUTCFullYear() &&
-      a.getUTCMonth() === b.getUTCMonth() &&
-      a.getUTCDate() === b.getUTCDate()
-    );
-  },
+            if (this.isFutureDate(date)) return;
 
-  isStart(date) {
-    return this.isSameDay(date, this.startDate);
-  },
+            const current = this.toLocalDate(this.formatDate(date));
+            if (!this.startDate) {
+                this.startDate = current;
+                this.startTime=this.formatDate(this.startDate)
+                console.log('开始了',this.startTime);
+                return;
+            }
 
-  isEnd(date) {
-    return this.isSameDay(date, this.endDate);
-  },
+            // ② 如果已经有 start 但没有 end → 设置 end
+            if (this.startDate && !this.endDate) {
+                const start = this.startDate.getTime();
+                const end = date.getTime();
 
-  isInRange(date) {
-    if (!this.startDate || !this.endDate) return false;
+                // 若结束比开始早 → 交换
+                if (end < start) {
+                    this.endDate = this.startDate;
+                    this.startDate = new Date(date);
+                } else {
+                    this.endDate = new Date(date);
+                }
+                
+                // 关键改动：使用 formatDate 打印，避免时区问题
+                // 注意：原代码中打印的是 this.end，假设是 this.endDate 的笔误，这里修正为 this.endDate
+                this.endTime=this.formatDate(this.endDate)
+                console.log('结束了', this.selectedUserId,this.startTime,this.endTime);
+                if(this.selectedUserId==10000){
+                  this.getAllUsersWorkSummaryByDateRange(this.startTime,this.endTime)
+                }else{
+                  this.getOneUserByDateRange(this.selectedUserId,this.startDate,this.endDate)
+                }
+                // 如果原代码中 this.end 是一个存在的属性，请自行调整
+                // console.log('结束了', this.end); 
+                return;
+            }
 
-    const t = date.getTime();
-    const s = this.startDate.getTime();
-    const e = this.endDate.getTime();
+            // ③ start + end 都存在，再点击就是重新开始
+            this.startDate = new Date(date);
+            this.endDate = null;
+            
+            // 关键改动：重新开始时也打印格式化后的日期
+            console.log('重新开始，新选择了',this.formatDate(this.startDate));
+        },
+      onSelectDay(e) {
+        this.calendarValue = e;
+      },
 
-    return t > s && t < e;
-  },
-    isFutureDate(date) {
-      // 用 UTC 判断
-      const d = new Date(date);
-      d.setUTCHours(0,0,0,0);
-      return d.getTime() > this.todayUtcTimestamp;
-    },
-    disableFutureDates(time) {
-      return time.getTime() > this.todayTimestamp;
-    },
-    onSelect(date) {
-      const y = date.getUTCFullYear();
-      const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const d = String(date.getUTCDate()).padStart(2, '0');
-      const ymd = `${y}-${m}-${d}`;
-      this.value = ymd;   // 或者 this.$emit(...)
-      console.log(ymd);
-    },
-    changewage2(index){
-      if(this.isCount){
-         this.recalculateList1();
-      }
-    },
-    changewage3(index){
-      if(this.isCount){
-         this.recalculateList1();
-      }
-    },
-    recalculateList1() {
-      // 如果还没点击过“计算”按钮，就不执行，防止报错
-      if (!this.isCount) return;
+      // -------------------------
+      // 高亮逻辑
+      // -------------------------
+      isSameDay(a, b) {
+        if (!a || !b) return false;
+        return (
+          a.getUTCFullYear() === b.getUTCFullYear() &&
+          a.getUTCMonth() === b.getUTCMonth() &&
+          a.getUTCDate() === b.getUTCDate()
+        );
+      },
 
-      // 1. 重新统计 list2 (日薪) 的当前工资总和
-      let sum2 = 0;
-      this.list2.forEach(item => {
-        // 只有勾选参与计算的才统计
-        if (item.isSelected) {
-          // 注意：这里直接取 item.wage，也就是你手动修改后的值
-          sum2 += Number(item.wage) || 0; 
-        }
-      });
+      isStart(date) {
+        return this.isSameDay(date, this.startDate);
+      },
 
-      // 2. 重新统计 list3 (兼职) 的当前工资总和
-      let sum3 = 0;
-      this.list3.forEach(item => {
-        if (item.isSelected) {
-          sum3 += Number(item.wage) || 0;
-        }
-      });
+      isEnd(date) {
+        return this.isSameDay(date, this.endDate);
+      },
 
-      // 3. 计算剩下的钱 (全职小费池)
-      // totalTips1 是 (现金+信用卡 - 3%)，这个是大池子，通常不变
-      this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
+      isInRange(date) {
+        if (!this.startDate || !this.endDate) return false;
 
-      // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.isSelected);
-      this.splitFairForObjects(list11, this.totalTips2);
+        const t = date.getTime();
+        const s = this.startDate.getTime();
+        const e = this.endDate.getTime();
 
-      // 5. 强制刷新视图 (Vue 2 有时需要)
-      this.$forceUpdate();
-    }
+        return t > s && t < e;
+      },
+        isFutureDate(date) {
+          // 用 UTC 判断
+          const d = new Date(date);
+          d.setUTCHours(0,0,0,0);
+          return d.getTime() > this.todayUtcTimestamp;
+        },
+        disableFutureDates(time) {
+          return time.getTime() > this.todayTimestamp;
+        },
+        onSelect(date) {
+          const y = date.getUTCFullYear();
+          const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+          const d = String(date.getUTCDate()).padStart(2, '0');
+          const ymd = `${y}-${m}-${d}`;
+          this.value = ymd;   // 或者 this.$emit(...)
+          console.log(ymd);
+        },
     }
 }
 </script>
 
 <style scoped>
+  .salary {
+    font-size: 12px;
+    color: #409EFF;
+    margin-top: 4px;
+    position: absolute;
+    bottom: -10px;
+  }
 .r1{
     display: flex;
     align-items: center;
@@ -345,6 +501,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   /* 调整字体大小等 */
 }
   /deep/ .el-calendar-table .el-calendar-day{

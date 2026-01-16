@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import HelloWorld from '@/components/HelloWorld'
 import Admin from '@/components/Admin'
+import Admin2 from '@/components/Admin2'
 
 Vue.use(Router)
 
@@ -16,6 +17,11 @@ export default new Router({
       path: '/admin',
       name: 'Admin',
       component: Admin
+    },
+    {
+      path: '/admin2',
+      name: 'Admin2',
+      component: Admin2
     }
   ]
 })
