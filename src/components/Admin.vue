@@ -133,6 +133,7 @@ export default {
       }
     },
     mounted(){
+      return
       const year = this.calendarValue.getUTCFullYear();
       const month = this.calendarValue.getUTCMonth() + 1;
       console.log(this.calendarValue.getUTCFullYear(),month)
@@ -140,6 +141,7 @@ export default {
     },
     methods:{
           changeMode(){
+            return
             console.log(this.selectedMode)
             this.startDate = null;
             this.endDate = null;
@@ -157,12 +159,12 @@ export default {
             }
           },
           getOneUserMonth(id){
+            return
             const date = new Date(this.calendarValue);
             const year = this.calendarValue.getUTCFullYear();;
             // 补零处理，确保格式为 "2025-12"const month = 
             const month = String(new Date(this.calendarValue).getUTCMonth() + 1).padStart(2, '0');
             let current = `${year}-${month}`
-            console.log(current,77)
             // let wage_history = localStorage.getItem('wage_history')!=null?JSON.parse(localStorage.getItem('wage_history')):[];
             // const month_result = wage_history.filter(item => item.userId == id)
             let wage_history = localStorage.getItem('wage_history') != null ? JSON.parse(localStorage.getItem('wage_history')) : [];
@@ -180,12 +182,12 @@ export default {
               0
             );
             this.singleDays = month_result.length
-            console.log(month_result.length,9)
             this.singleMonthTotal = total
             this.totalTime1=totalTime1
             this.totalTime2=totalTime2
           },
           getAllUsersWorkSummaryByDateRange(startDate, endDate) {
+            return
             let wage_history = localStorage.getItem('wage_history')
               ? JSON.parse(localStorage.getItem('wage_history'))
               : [];
@@ -271,15 +273,17 @@ export default {
             //   this.endDate = null;
             // }
             const month = new Date(this.calendarValue).getUTCMonth() + 1
-            console.log(month,88)
+            console.log(this.formatDate2(this.calendarValue),999)
+            console.log(month,this.todayLocalTimestamp,this.calendarValue,88)
             this.currentMonth = month
             this.getOneUserMonth(this.selectedUserId)
             if(this.selectedUserId!==null){
                this.getOneUserByDateRange(this.selectedUserId,this.startDate,this.endDate)
             }
-            console.log(this.selectedUserId,month,this.startDate.this.endDate)
+            console.log(111,this.selectedUserId,month,this.startDate,this.endDate) //这里报错Cannot read properties of null (reading 'this')怎么回事
           },
           getList(){
+            return
             let list1 = localStorage.getItem('list1')!=null?JSON.parse(localStorage.getItem('list1')):[];
             let list2 = localStorage.getItem('list2')!=null?JSON.parse(localStorage.getItem('list2')):[];
             let list3 = localStorage.getItem('list3')!=null?JSON.parse(localStorage.getItem('list3')):[];
@@ -314,7 +318,15 @@ export default {
           const day = String(date.getUTCDate()).padStart(2, '0'); 
           return `${year}-${month}-${day}`;
         },
+        formatDate2(str) {
+          const date = new Date(str)
+          const y = date.getFullYear()
+          const m = String(date.getMonth() + 1).padStart(2, '0')
+          const d = String(date.getDate()).padStart(2, '0')
+          return `${y}-${m}-${d}`
+        },
         single(date){
+          return
           let getSalary = JSON.parse(localStorage.getItem('wage_history'));
           this.singleResult =  getSalary.filter(item => item.date == date);
           console.log(this.singleResult)

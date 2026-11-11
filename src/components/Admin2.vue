@@ -495,11 +495,9 @@ export default {
 
   isInRange(date) {
     if (!this.startDate || !this.endDate) return false;
-
     const t = date.getTime();
     const s = this.startDate.getTime();
     const e = this.endDate.getTime();
-
     return t > s && t < e;
   },
     isFutureDate(date) {
@@ -530,6 +528,7 @@ export default {
       }
     },
     recalculateList1() {
+      return
       // 如果还没点击过“计算”按钮，就不执行，防止报错
       if (!this.isCount) return;
 
@@ -575,6 +574,7 @@ export default {
       this.getList()
     },
     count(){
+      return
       this.isPlus20=false
       this.isPlus30=false
       if(this.cash==''){
@@ -609,6 +609,7 @@ export default {
       this.$forceUpdate()
     },
     selected1(index){
+      return
       //this.$set(this.list1, index, {...this.list1[index],isSelected:!this.list1[index].isSelected})
       this.list1[index].isSelected = !this.list1[index].isSelected
       let sum = 0
