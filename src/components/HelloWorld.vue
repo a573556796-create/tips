@@ -344,7 +344,7 @@ export default {
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.isSelected);
+      let list11 = this.list1.filter(item => item.isSelected && item.isShow == 1); // 只给首页显示且勾选的人分，隐藏的人不参与
       console.log(list11)
       this.splitFairForObjects(list11, this.totalTips2);
 
@@ -385,7 +385,7 @@ export default {
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.isSelected);
+      let list11 = this.list1.filter(item => item.isSelected && item.isShow == 1); // 只给首页显示且勾选的人分，隐藏的人不参与
       this.splitFairForObjects(list11, this.totalTips2);
 
       // 5. 强制刷新视图 (Vue 2 有时需要)
@@ -562,7 +562,7 @@ export default {
       this.totalTips2 = Number(this.totalTips1 - sum2 - sum3);
 
       // 4. 重新分配给 List1
-      let list11 = this.list1.filter(item => item.isSelected);
+      let list11 = this.list1.filter(item => item.isSelected && item.isShow == 1); // 只给首页显示且勾选的人分，隐藏的人不参与
       this.splitFairForObjects(list11, this.totalTips2);
 
       // 5. 强制刷新视图 (Vue 2 有时需要)
@@ -609,7 +609,7 @@ export default {
         }
       })
       this.totalTips2 = Number(this.totalTips1-sum1-sum2)
-      let list11 = this.list1.filter(item => item.isSelected);
+      let list11 = this.list1.filter(item => item.isSelected && item.isShow == 1); // 只给首页显示且勾选的人分，隐藏的人不参与
       console.log(list11)
       this.splitFairForObjects(list11, this.totalTips2)
       this.$forceUpdate()
@@ -813,11 +813,12 @@ export default {
         x.intPart += 1;
     });
 
-    // 4. 写回结果
+    // 4. 写回结果（用 $set 写回，保证 wage/wage2 是响应式的，
+    // 这样计算后全职小费输入框里的金额才能被手动修改）
     scaled.forEach(x => {
         const idx = x.__origIndex;
-        list[idx].wage = x.intPart;
-        list[idx].wage2 = x.intPart;
+        this.$set(list[idx], 'wage', x.intPart);
+        this.$set(list[idx], 'wage2', x.intPart);
     });
 
     console.log("历史修正后的分配列表：", list);
@@ -1029,7 +1030,7 @@ export default {
         // --- 修改开始：处理 list2，确保 wage 和 ot 存在且响应式 ---
         this.list2 = list2.map(item => ({
           ...item,
-          isSelected: true, // 原有逻辑
+          isSelected: item.isShow == 1, // 首页显示的人才默认参与计算，和 list1 同理（原来写死 true，隐藏的人也会被算进去）
           wage: item.wage || '', // 强制初始化 wage
           ot: item.ot || ''      // 强制初始化 ot
         }));
@@ -1045,10 +1046,22 @@ export default {
         }));
         // --- 修改结束 ---
 
-        this.list1 = list1;
+        // --- 修改开始：处理 list1，和 list2/list3 同理，必须先补上 wage/wage2 ---
+        // 从 localStorage 读回来的全职对象只有 name/percent/isShow/id，没有 wage。
+        // Vue 2 里对象被观测之后再新增的属性不是响应式的，splitFair 里
+        // list[idx].wage = ... 写进去的值 el-input 认不到，输入框就会改不了、删不掉。
+        // 先在这里把 wage/wage2 初始化好，后面赋值才会触发更新，输入框才能编辑。
+        this.list1 = list1.map(item => ({
+          ...item,
+          wage: item.wage || '',
+          wage2: item.wage2 || ''
+        }));
+        // --- 修改结束 ---
         let sum1 = 0;
         this.list1.forEach(item => {
-          item.isSelected = true;
+          // 首页不显示的人(isShow!=1)默认不参与计算，
+          // 否则点重新计算时他还是会照样分走小费（只是那一行不显示，看不见）
+          item.isSelected = item.isShow == 1;
           if (item.isSelected && item.isShow) {
             sum1 += Number(item.percent);
           }
