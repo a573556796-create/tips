@@ -1403,13 +1403,20 @@ export default {
           this.list1[this.currentIndex].name = this.type1Name
           this.list1[this.currentIndex].percent = this.type1percent
           localStorage.setItem('list1', JSON.stringify(this.list1));
-          this.update()
-          this.$message({
-              message: '修改成功',
-              type: 'success'
-          });
-          this.isEdit = false
-          this.isClosed = true
+          // 等服务器确认存上了再弹成功：不等的话，改完马上刷新会取消没发完的请求，
+          // 服务器还是旧点数，下次打开就被盖回去。失败就留着弹窗，让他再点一次保存。
+          this.update().then(ok => {
+            if (ok) {
+              this.$message({
+                  message: '修改成功',
+                  type: 'success'
+              });
+              this.isEdit = false
+              this.isClosed = true
+            } else {
+              this.$message.error('没存到服务器，再点一次保存');
+            }
+          })
         }else{
           if(this.currentList==2){
             //从list2里变成list1里
@@ -1593,13 +1600,15 @@ export default {
         list2: JSON.parse(localStorage.getItem("list2")),
         list3: JSON.parse(localStorage.getItem("list3")),
       }
-      this.$http.post('/update1',{
+      return this.$http.post('/update1',{
         list:dataToSync
       })
       .then(res => {
+        return true
       })
       .catch(error => {
           console.error('请求失败:', error)
+          return false
       })
     },
     sub3(){

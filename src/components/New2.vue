@@ -13,9 +13,10 @@
         <div style="margin-bottom:8px;">
               </div>
                 <el-calendar 
-                    :model-value="calendarValue"
-                    @input="onSelectDay"
-                  >
+    :model-value="calendarValue"
+    @input="onSelectDay"
+    :class="{ 'no-next-month': isNextMonthFuture }"
+>
                     <template v-slot:dateCell="{ date, data }">
                       <div 
                         class="date-cell-content"
@@ -69,7 +70,7 @@ export default {
       selectedDate:'',
       todayLocalTimestamp: today.getTime(),
       isChecked:false,
-      calendarValue: new Date(),
+      calendarValue: new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())),
       startDate: null,
       endDate: null,
       value: '',
@@ -113,6 +114,16 @@ export default {
     }
   },
     computed: {
+      isNextMonthFuture() {
+  if (!(this.calendarValue instanceof Date)) return false;
+  const now = new Date();
+  const todayYM = now.getUTCFullYear() * 12 + now.getUTCMonth();
+  const d = new Date(this.calendarValue.getTime());
+  d.setUTCDate(1); // 先定到 1 号，避免 31 号加月溢出
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  const nextYM = d.getUTCFullYear() * 12 + d.getUTCMonth();
+  return nextYM > todayYM; // 下个月超出今天所在的月份，就是未来月份
+},
       salaryMap() {
         return Object.fromEntries(
           this.singleMonth.map(item => [item.date, item.wage])
@@ -157,10 +168,11 @@ export default {
             }
           },
           getOneUserMonth(id){
-            const date = new Date(this.calendarValue);
-            const year = this.calendarValue.getUTCFullYear();;
-            // 补零处理，确保格式为 "2025-12"const month = 
-            const month = String(new Date(this.calendarValue).getUTCMonth() + 1).padStart(2, '0');
+            const year = this.calendarValue.getUTCFullYear();
+            // 注意：calendarValue 统一是 UTC 午夜的“日历日”（见 data 和 onSelectDay 的归一化），
+            // 所以按 UTC 取年月就是日历上显示的年月，和记录的本地日期字符串（如 2026-12-01）对得上。
+            // 不能按本地取——UTC 午夜在美东是前一天晚上 7 点，点 12 月 1 号会算回 11 月。
+            const month = String(this.calendarValue.getUTCMonth() + 1).padStart(2, '0');
             let current = `${year}-${month}`
             // let wage_history = localStorage.getItem('wage_history')!=null?JSON.parse(localStorage.getItem('wage_history')):[];
             // const month_result = wage_history.filter(item => item.userId == id)
@@ -389,9 +401,21 @@ export default {
             console.log('重新开始，新选择了',this.formatDate(this.startDate));
         },
       onSelectDay(e) {
-        this.calendarValue = e;
-      },
-
+  // 日历传来的日期有两种：点格子是 UTC 午夜（"2026-12-01" 直接 new Date），
+  // 点“今天”/上下月按钮是本地时间。UTC 午夜的按 UTC 取年月日，
+  // 其余按本地取，统一转成 UTC 午夜存起来，后面按 UTC 取月就都对了。
+  const isUtcMidnight = e.getUTCHours() === 0 && e.getUTCMinutes() === 0 && e.getUTCSeconds() === 0;
+  const y = isUtcMidnight ? e.getUTCFullYear() : e.getFullYear();
+  const m = isUtcMidnight ? e.getUTCMonth() : e.getMonth();
+  const d = isUtcMidnight ? e.getUTCDate() : e.getDate();
+  const oldMonth = this.calendarValue ? this.calendarValue.getUTCFullYear() + '-' + this.calendarValue.getUTCMonth() : '';
+  this.calendarValue = new Date(Date.UTC(y, m, d));
+  const newMonth = this.calendarValue.getUTCFullYear() + '-' + this.calendarValue.getUTCMonth();
+  // 只有月份变了、并且已经选了人，才重新拉当月数据
+  if (oldMonth !== newMonth && this.selectedUserId) {
+    this.getOneUserMonth(this.selectedUserId);
+  }
+},
       // -------------------------
       // 高亮逻辑
       // -------------------------
@@ -480,6 +504,12 @@ export default {
     color: white;
     border-radius: 50%;
   }
+/* 下个月是未来月份时，把“下个月”按钮变灰、不可点 */
+.no-next-month /deep/ .el-calendar__button-group button:last-child {
+  color: #c0c4cc;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* 中间区间 */
 .range-middle {
@@ -514,9 +544,7 @@ export default {
     width: 50px;
     height: 40px;
   }
-  /deep/ .el-calendar__button-group button:last-child {
-    display: none;
-  }
+
 
 .add,.add3{
   position: absolute;
